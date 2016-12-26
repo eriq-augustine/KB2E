@@ -40,10 +40,10 @@ double sqr(double x)
 
 double vec_len(vector<double> &a)
 {
-	double res=0;
-	for (int i=0; i<a.size(); i++)
-		res+=a[i]*a[i];
-	return sqrt(res);
+    double res=0;
+    for (int i=0; i<a.size(); i++)
+        res+=a[i]*a[i];
+    return sqrt(res);
 }
 
 string version;
@@ -63,7 +63,7 @@ map<int,int> entity2num;
 class Train{
 
 public:
-	map<pair<int,int>, map<int,int> > ok;
+    map<pair<int,int>, map<int,int> > ok;
     void add(int x,int y,int z)
     {
         fb_h.push_back(x);
@@ -77,20 +77,20 @@ public:
         rate = rate_in;
         margin = margin_in;
         method = method_in;
-		A.resize(relation_num);
-		for (int i=0; i<relation_num; i++)
-		{
-		    A[i].resize(n);
-		    for (int j=0; j<n; j++)
-		    	A[i][j] = randn(0,1.0/n,-1,1);
-		    norm2one(A[i]);
-		}
+        A.resize(relation_num);
+        for (int i=0; i<relation_num; i++)
+        {
+            A[i].resize(n);
+            for (int j=0; j<n; j++)
+                A[i][j] = randn(0,1.0/n,-1,1);
+            norm2one(A[i]);
+        }
         relation_vec.resize(relation_num);
-		for (int i=0; i<relation_vec.size(); i++)
-			relation_vec[i].resize(n);
+        for (int i=0; i<relation_vec.size(); i++)
+            relation_vec[i].resize(n);
         entity_vec.resize(entity_num);
-		for (int i=0; i<entity_vec.size(); i++)
-			entity_vec[i].resize(n);
+        for (int i=0; i<entity_vec.size(); i++)
+            entity_vec[i].resize(n);
         for (int i=0; i<relation_num; i++)
         {
             for (int ii=0; ii<n; ii++)
@@ -107,12 +107,12 @@ public:
 
 private:
     int n;
-	int method;
+    int method;
     double res;//loss function value
     double count,count1;//loss function gradient
     double rate;//learning rate
     double belta;
-	double margin;
+    double margin;
     vector<int> fb_h,fb_l,fb_r;
     vector<vector<int> > feature;
     vector<vector<double> > A, A_tmp;
@@ -121,8 +121,8 @@ private:
     {
         double x = vec_len(a);
         if (x>1)
-        for (int ii=0; ii<a.size(); ii++)
-                a[ii]/=x;
+            for (int ii=0; ii<a.size(); ii++)
+                    a[ii]/=x;
         return 0;
     }
     double norm2one(vector<double> &a)
@@ -134,32 +134,32 @@ private:
     }
     double norm(vector<double> &a, vector<double> &A)
     {
-		norm2one(A);
-    	double sum=0;
-    	while (true)
-    	{
-			for (int i=0; i<n; i++)
-				sum+=sqr(A[i]);
-			sum = sqrt(sum);
-			for (int i=0; i<n; i++)
-				A[i]/=sum;
-		    double x=0;
-		    for (int ii=0; ii<n; ii++)
-		    {
-		        x+=A[ii]*a[ii];
-		    }
-		    if (x>0.1)
-		    {
-		        for (int ii=0; ii<n; ii++)
-		        {
-		        	a[ii]-=rate*A[ii];
-					A[ii]-=rate*a[ii];
-		        }
-		    }
-		    else
-		    	break;
-		}
-		norm2one(A);
+        norm2one(A);
+        double sum=0;
+        while (true)
+        {
+            for (int i=0; i<n; i++)
+                sum+=sqr(A[i]);
+            sum = sqrt(sum);
+            for (int i=0; i<n; i++)
+                A[i]/=sum;
+            double x=0;
+            for (int ii=0; ii<n; ii++)
+            {
+                x+=A[ii]*a[ii];
+            }
+            if (x>0.1)
+            {
+                for (int ii=0; ii<n; ii++)
+                {
+                    a[ii]-=rate*A[ii];
+                    A[ii]-=rate*a[ii];
+                }
+            }
+            else
+                break;
+        }
+        norm2one(A);
         return 0;
     }
     int rand_max(int x)
@@ -187,44 +187,44 @@ private:
         for (int eval=0; eval<neval; eval++)
         {
 
-        	res=0;
-         	for (int batch = 0; batch<nbatches; batch++)
-         	{
-         		for (int k=0; k<batchsize; k++)
-         		{
-					int i=rand_max(fb_h.size());
-					int j=rand_max(entity_num);
-					double pr = 1000*right_mean[fb_r[i]]/(right_mean[fb_r[i]]+left_mean[fb_r[i]]);
-					if (method ==0)
+            res=0;
+             for (int batch = 0; batch<nbatches; batch++)
+             {
+                 for (int k=0; k<batchsize; k++)
+                 {
+                    int i=rand_max(fb_h.size());
+                    int j=rand_max(entity_num);
+                    double pr = 1000*right_mean[fb_r[i]]/(right_mean[fb_r[i]]+left_mean[fb_r[i]]);
+                    if (method ==0)
                         pr = 500;
-					if (rand()%1000<pr)
-					{
-						while (ok[make_pair(fb_h[i],fb_r[i])].count(j)>0)
-							j=rand_max(entity_num);
+                    if (rand()%1000<pr)
+                    {
+                        while (ok[make_pair(fb_h[i],fb_r[i])].count(j)>0)
+                            j=rand_max(entity_num);
                         train_kb(fb_h[i],fb_l[i],fb_r[i],fb_h[i],j,fb_r[i]);
-					}
-					else
-					{
-						while (ok[make_pair(j,fb_r[i])].count(fb_l[i])>0)
-							j=rand_max(entity_num);
+                    }
+                    else
+                    {
+                        while (ok[make_pair(j,fb_r[i])].count(fb_l[i])>0)
+                            j=rand_max(entity_num);
                         train_kb(fb_h[i],fb_l[i],fb_r[i],j,fb_l[i],fb_r[i]);
-					}
-                	norm(entity_tmp[fb_h[i]]);
-                	norm(entity_tmp[fb_l[i]]);
-                	norm(entity_tmp[j]);
-					norm(entity_tmp[fb_h[i]],A_tmp[fb_r[i]]);
-					norm(entity_tmp[fb_l[i]],A_tmp[fb_r[i]]);
-					norm(entity_tmp[j],A_tmp[fb_r[i]]);
-         		}
-				
-           		A = A_tmp;
-           		relation_vec = relation_tmp;
-           		entity_vec = entity_tmp;
-           	}
-           		cout<<eval<<' '<<res<<endl;
-                FILE* f1 = fopen(("A.txt"+version).c_str(),"w");
-                FILE* f2 = fopen(("relation2vec.txt"+version).c_str(),"w");
-                FILE* f3 = fopen(("entity2vec.txt"+version).c_str(),"w");
+                    }
+                    norm(entity_tmp[fb_h[i]]);
+                    norm(entity_tmp[fb_l[i]]);
+                    norm(entity_tmp[j]);
+                    norm(entity_tmp[fb_h[i]],A_tmp[fb_r[i]]);
+                    norm(entity_tmp[fb_l[i]],A_tmp[fb_r[i]]);
+                    norm(entity_tmp[j],A_tmp[fb_r[i]]);
+                 }
+                
+                   A = A_tmp;
+                   relation_vec = relation_tmp;
+                   entity_vec = entity_tmp;
+               }
+                   cout<<eval<<' '<<res<<endl;
+                FILE* f1 = fopen(("A."+version).c_str(),"w");
+                FILE* f2 = fopen(("relation2vec."+version).c_str(),"w");
+                FILE* f3 = fopen(("entity2vec."+version).c_str(),"w");
                 times+=1;
                 for (int i=0; i<relation_num; i++)
                 {
@@ -234,9 +234,9 @@ private:
                 }
                 for (int i=0; i<relation_num; i++)
                 {
-                	for (int jj=0; jj<n; jj++)
-                		fprintf(f1,"%.6lf\t",A[i][jj]);
-                	fprintf(f1,"\n");
+                    for (int jj=0; jj<n; jj++)
+                        fprintf(f1,"%.6lf\t",A[i][jj]);
+                    fprintf(f1,"\n");
                 }
                 for (int i=0; i<entity_num; i++)
                 {
@@ -255,7 +255,7 @@ private:
         double tmp1=0,tmp2=0;
         for (int jj=0; jj<n; jj++)
         {
-        	tmp1+=A[rel][jj]*entity_vec[e1][jj];
+            tmp1+=A[rel][jj]*entity_vec[e1][jj];
             tmp2+=A[rel][jj]*entity_vec[e2][jj];
         }
 
@@ -277,11 +277,11 @@ private:
         {
 
             double x = 2*(entity_vec[e2][ii]-tmp2*A[rel][ii]-(entity_vec[e1][ii]-tmp1*A[rel][ii])-relation_vec[rel][ii]);
-			//for L1 distance function
+            //for L1 distance function
             if (x>0)
-            	x=1;
+                x=1;
             else
-            	x=-1;
+                x=-1;
             sum_x+=x*A[rel][ii];
             relation_tmp[rel][ii]-=belta*rate*x;
             entity_tmp[e1][ii]-=belta*rate*x;
@@ -291,13 +291,13 @@ private:
         }
         for (int ii=0; ii<n; ii++)
         {
-        	A_tmp[rel][ii]+=belta*rate*sum_x*entity_vec[e1][ii];
-        	A_tmp[rel][ii]-=belta*rate*sum_x*entity_vec[e2][ii];
+            A_tmp[rel][ii]+=belta*rate*sum_x*entity_vec[e1][ii];
+            A_tmp[rel][ii]-=belta*rate*sum_x*entity_vec[e2][ii];
         }
 
         norm(relation_tmp[rel]);
-		norm(entity_tmp[e1]);
-		norm(entity_tmp[e2]);
+        norm(entity_tmp[e1]);
+        norm(entity_tmp[e2]);
 
         norm2one(A_tmp[rel]);
         norm(relation_tmp[rel],A_tmp[rel]);
@@ -308,9 +308,9 @@ private:
         double sum2 = calc_sum(e1_b,e2_b,rel_b);
         if (sum1+margin>sum2)
         {
-        	res+=margin+sum1-sum2;
-        	gradient( e1_a, e2_a, rel_a, -1);
-        	gradient(e1_b, e2_b, rel_b,1);
+            res+=margin+sum1-sum2;
+            gradient( e1_a, e2_a, rel_a, -1);
+            gradient(e1_b, e2_b, rel_b,1);
         }
     }
 };
@@ -319,24 +319,24 @@ Train train;
 void prepare()
 {
     FILE* f1 = fopen("../data/entity2id.txt","r");
-	FILE* f2 = fopen("../data/relation2id.txt","r");
-	int x;
-	while (fscanf(f1,"%s%d",buf,&x)==2)
-	{
-		string st=buf;
-		entity2id[st]=x;
-		id2entity[x]=st;
-		entity_num++;
-	}
-	while (fscanf(f2,"%s%d",buf,&x)==2)
-	{
-		string st=buf;
-		relation2id[st]=x;
-		id2relation[x]=st;
-		relation_num++;
-	}
+    FILE* f2 = fopen("../data/relation2id.txt","r");
+    int x;
+    while (fscanf(f1,"%s%d",buf,&x)==2)
+    {
+        string st=buf;
+        entity2id[st]=x;
+        id2entity[x]=st;
+        entity_num++;
+    }
+    while (fscanf(f2,"%s%d",buf,&x)==2)
+    {
+        string st=buf;
+        relation2id[st]=x;
+        id2relation[x]=st;
+        relation_num++;
+    }
     FILE* f_kb = fopen("../data/train.txt","r");
-	while (fscanf(f_kb,"%s",buf)==1)
+    while (fscanf(f_kb,"%s",buf)==1)
     {
         string s1=buf;
         fscanf(f_kb,"%s",buf);
@@ -377,32 +377,32 @@ void prepare()
     }
     for (int i=0; i<relation_num; i++)
     {
-    	double sum1=0,sum2=0,sum3 = 0;
-    	for (map<int,vector<int> >::iterator it = left_entity[i].begin(); it!=left_entity[i].end(); it++)
-    	{
-    		sum1++;
-    		sum2+=it->second.size();
-    		sum3+=sqr(it->second.size());
-    	}
-    	left_mean[i]=sum2/sum1;
+        double sum1=0,sum2=0,sum3 = 0;
+        for (map<int,vector<int> >::iterator it = left_entity[i].begin(); it!=left_entity[i].end(); it++)
+        {
+            sum1++;
+            sum2+=it->second.size();
+            sum3+=sqr(it->second.size());
+        }
+        left_mean[i]=sum2/sum1;
 
-    	left_var[i]=sum3/sum1-sqr(left_mean[i]);
+        left_var[i]=sum3/sum1-sqr(left_mean[i]);
     }
     for (int i=0; i<relation_num; i++)
     {
-    	double sum1=0,sum2=0,sum3=0;
-    	for (map<int,vector<int> >::iterator it = right_entity[i].begin(); it!=right_entity[i].end(); it++)
-    	{
-    		sum1++;
-    		sum2+=it->second.size();
-    		sum3+=sqr(it->second.size());
-    	}
-    	right_mean[i]=sum2/sum1;
-    	right_var[i]=sum3/sum1-sqr(right_mean[i]);
+        double sum1=0,sum2=0,sum3=0;
+        for (map<int,vector<int> >::iterator it = right_entity[i].begin(); it!=right_entity[i].end(); it++)
+        {
+            sum1++;
+            sum2+=it->second.size();
+            sum3+=sqr(it->second.size());
+        }
+        right_mean[i]=sum2/sum1;
+        right_var[i]=sum3/sum1-sqr(right_mean[i]);
     }
 
     for (int i=0; i<relation_num; i++)
-    	cout<<i<<'\t'<<id2relation[i]<<' '<<left_mean[i]<<' '<<right_mean[i]<<endl;
+        cout<<i<<'\t'<<id2relation[i]<<' '<<left_mean[i]<<' '<<right_mean[i]<<endl;
 
     fclose(f_kb);
 
@@ -431,17 +431,22 @@ int main(int argc,char**argv)
     double rate = 0.001;
     double margin = 1;
     int i;
+
     if ((i = ArgPos((char *)"-size", argc, argv)) > 0) n = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-margin", argc, argv)) > 0) margin = atoi(argv[i + 1]);
+    if ((i = ArgPos((char *)"-rate", argc, argv)) > 0) rate = atof(argv[i + 1]);
     if ((i = ArgPos((char *)"-method", argc, argv)) > 0) method = atoi(argv[i + 1]);
-    cout<<"size = "<<n<<endl;
-    cout<<"learing rate = "<<rate<<endl;
-    cout<<"margin = "<<margin<<endl;
+
     if (method)
         version = "bern";
     else
         version = "unif";
+
+    cout<<"size = "<<n<<endl;
+    cout<<"learing rate = "<<rate<<endl;
+    cout<<"margin = "<<margin<<endl;
     cout<<"method = "<<version<<endl;
+
     prepare();
     train.run(n,rate,margin,method);
 }

@@ -329,17 +329,22 @@ int main(int argc,char**argv)
     double rate = 0.001;
     double margin = 1;
     int i;
+
     if ((i = ArgPos((char *)"-size", argc, argv)) > 0) n = atoi(argv[i + 1]);
     if ((i = ArgPos((char *)"-margin", argc, argv)) > 0) margin = atoi(argv[i + 1]);
+    if ((i = ArgPos((char *)"-rate", argc, argv)) > 0) rate = atof(argv[i + 1]);
     if ((i = ArgPos((char *)"-method", argc, argv)) > 0) method = atoi(argv[i + 1]);
-    cout<<"size = "<<n<<endl;
-    cout<<"learing rate = "<<rate<<endl;
-    cout<<"margin = "<<margin<<endl;
+
     if (method)
         version = "bern";
     else
         version = "unif";
+
+    cout<<"size = "<<n<<endl;
+    cout<<"learing rate = "<<rate<<endl;
+    cout<<"margin = "<<margin<<endl;
     cout<<"method = "<<version<<endl;
+
     prepare();
     train.run(n,rate,margin,method);
 }

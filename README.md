@@ -1,3 +1,8 @@
+Forked from https://github.com/thunlp/KB2E
+There are some technical issues that needed to be addressed as well as some automation to better fit with my experiments.
+
+___
+
 New: Add PTransE (EMNLP 2015) code!
 
 Evaluation Results
