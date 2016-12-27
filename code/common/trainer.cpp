@@ -11,19 +11,14 @@
 
 namespace common {
 
-const std::string Trainer::DATA_DIR = "../data";
-
-const std::string Trainer::ENTITY_ID_FILE = "entity2id.txt";
-const std::string Trainer::RELATION_ID_FILE = "relation2id.txt";
-const std::string Trainer::TRAIN_FILE = "train.txt";
-
-const std::string Trainer::ENTITY_OUT_FILE_BASENAME = "entity2vec";
-const std::string Trainer::RELATION_OUT_FILE_BASENAME = "relation2vec";
-
-Trainer::Trainer(int embeddingSize,  double learningRate, double margin,
+Trainer::Trainer(std::string dataDir, std::string outputDir,
+                 int embeddingSize, double learningRate, double margin,
                  int method, int numBatches, int maxEpochs)
-      : embeddingSize_(embeddingSize), learningRate_(learningRate), margin_(margin),
+      : dataDir_(dataDir), outputDir_(outputDir),
+        embeddingSize_(embeddingSize), learningRate_(learningRate), margin_(margin),
         method_(method), numBatches_(numBatches), maxEpochs_(maxEpochs) {
+   dataDir_ = dataDir_.empty() ? DEFAULT_DATA_DIR : dataDir_;
+   outputDir_ = outputDir_.empty() ? DEFAULT_OUTPUT_DIR : outputDir_;
    embeddingSize_ = embeddingSize_ > 0 ? embeddingSize_ : DEFAULT_EMBEDDING_SIZE;
    learningRate_ = learningRate_ > 0 ? learningRate_ : DEFAULT_LEARNING_RATE;
    margin_ = margin_ > 0 ? margin_ : DEFAULT_MARGIN;
@@ -120,7 +115,7 @@ void Trainer::bfgs() {
 }
 
 void Trainer::write() {
-   FILE* relationOutFile = fopen((RELATION_OUT_FILE_BASENAME + "."  + methodName()).c_str(), "w");
+   FILE* relationOutFile = fopen((outputDir_ + "/" + RELATION_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
    for (int i = 0; i < numRelations_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
          fprintf(relationOutFile, "%.6lf\t", relation_vec_[i][j]);
@@ -129,7 +124,7 @@ void Trainer::write() {
    }
    fclose(relationOutFile);
 
-   FILE* entityOutFile = fopen((ENTITY_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
+   FILE* entityOutFile = fopen((outputDir_ + "/" + ENTITY_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
    for (int i = 0; i < numEntities_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
          fprintf(entityOutFile, "%.6lf\t", entity_vec_[i][j]);
@@ -167,14 +162,14 @@ void Trainer::loadFiles() {
 
    // TODO(eriq): Better error handling with files.
 
-   FILE* entityIdFile = fopen((DATA_DIR + "/" + ENTITY_ID_FILE).c_str(), "r");
+   FILE* entityIdFile = fopen((dataDir_ + "/" + ENTITY_ID_FILE).c_str(), "r");
    while (fscanf(entityIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
       std::string entityIdString = headIdStringBuf;
       entity2id[entityIdString] = entityId;
    }
    fclose(entityIdFile);
 
-   FILE* relationIdFile = fopen((DATA_DIR + "/" + RELATION_ID_FILE).c_str(), "r");
+   FILE* relationIdFile = fopen((dataDir_ + "/" + RELATION_ID_FILE).c_str(), "r");
    while (fscanf(relationIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
       std::string entityIdString = headIdStringBuf;
       relation2id[entityIdString] = entityId;
@@ -184,7 +179,7 @@ void Trainer::loadFiles() {
    char tailIdStringBuf[ID_STRING_MAX_LEN];
    char relationIdStringBuf[ID_STRING_MAX_LEN];
 
-   FILE* trainFile = fopen((DATA_DIR + "/" + TRAIN_FILE).c_str(), "r");
+   FILE* trainFile = fopen((dataDir_ + "/" + TRAIN_FILE).c_str(), "r");
    while (fscanf(trainFile,"%s\t%s\t%s", headIdStringBuf, tailIdStringBuf, relationIdStringBuf) == 3) {
       std::string headIdString = headIdStringBuf;
       std::string tailIdString = tailIdStringBuf;

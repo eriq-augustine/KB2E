@@ -9,7 +9,8 @@ namespace transe {
 
 class TransETrainer : public common::Trainer {
    public:
-      explicit TransETrainer(int embeddingSize,  double learningRate, double margin,
+      explicit TransETrainer(std::string dataDir, std::string outputDir,
+                             int embeddingSize, double learningRate, double margin,
                              int method, int numBatches, int maxEpochs, int distanceType);
 
    protected:

@@ -10,14 +10,11 @@ namespace common {
 
 class Trainer {
    public:
-      static const std::string DATA_DIR;
-      static const std::string ENTITY_ID_FILE;
-      static const std::string RELATION_ID_FILE;
-      static const std::string TRAIN_FILE;
-      static const std::string ENTITY_OUT_FILE_BASENAME;
-      static const std::string RELATION_OUT_FILE_BASENAME;
+      std::string dataDir_;
+      std::string outputDir_;
 
-      explicit Trainer(int embeddingSize,  double learningRate, double margin,
+      explicit Trainer(std::string dataDir, std::string outputDir,
+                       int embeddingSize, double learningRate, double margin,
                        int method, int numBatches, int maxEpochs);
 
       void add(int head, int tail, int relation);

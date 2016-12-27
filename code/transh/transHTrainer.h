@@ -9,9 +9,11 @@ namespace transh {
 
 class TransHTrainer : public common::Trainer {
    public:
-      explicit TransHTrainer(int embeddingSize,  double learningRate, double margin,
+      explicit TransHTrainer(std::string dataDir, std::string outputDir,
+                             int embeddingSize, double learningRate, double margin,
                              int method, int numBatches, int maxEpochs)
-            : common::Trainer(embeddingSize, learningRate, margin, method, numBatches, maxEpochs) {}
+            : common::Trainer(dataDir, outputDir, embeddingSize, learningRate, margin, method, numBatches, maxEpochs) {}
+
       void write() override;
 
    protected:

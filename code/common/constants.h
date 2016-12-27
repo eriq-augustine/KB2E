@@ -14,6 +14,13 @@
 #define L1_DISTANCE 0
 #define L2_DISTANCE 1
 
+
+#define ENTITY_ID_FILE "entity2id.txt"
+#define RELATION_ID_FILE "relation2id.txt"
+#define TRAIN_FILE "train.txt"
+#define ENTITY_OUT_FILE_BASENAME "entity2vec"
+#define RELATION_OUT_FILE_BASENAME "relation2vec"
+
 #define DEFAULT_EMBEDDING_SIZE 100
 #define DEFAULT_LEARNING_RATE 0.001
 #define DEFAULT_MARGIN 1.0
@@ -21,5 +28,8 @@
 #define DEFAULT_NUM_BATCHES 100
 #define DEFAULT_MAX_EPOCHS 1000
 #define DEFAULT_DISTANCE L1_DISTANCE
+
+#define DEFAULT_DATA_DIR "../data"
+#define DEFAULT_OUTPUT_DIR "."
 
 #endif  // COMMON_CONSTANTS_H_

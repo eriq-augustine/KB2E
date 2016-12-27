@@ -31,7 +31,7 @@ int main(int argc, char**argv) {
     std::cout << "margin = " << margin << std::endl;
     std::cout << "method = " << version << std::endl;
 
-    common::Trainer* trainer = new transe::TransETrainer(n, rate, margin, method, -1, -1, -1);
+    common::Trainer* trainer = new transe::TransETrainer("", "", n, rate, margin, method, -1, -1, -1);
     trainer->loadFiles();
     trainer->train();
     trainer->write();
