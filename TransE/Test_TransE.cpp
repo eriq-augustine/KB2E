@@ -33,21 +33,21 @@ double sigmod(double x)
 
 double vec_len(vector<double> a)
 {
-	double res=0;
-	for (int i=0; i<a.size(); i++)
-		res+=a[i]*a[i];
-	return sqrt(res);
+    double res=0;
+    for (int i=0; i<a.size(); i++)
+        res+=a[i]*a[i];
+    return sqrt(res);
 }
 
 void vec_output(vector<double> a)
 {
-	for (int i=0; i<a.size(); i++)
-	{
-		cout<<a[i]<<"\t";
-		if (i%10==9)
-			cout<<endl;
-	}
-	cout<<"-------------------------"<<endl;
+    for (int i=0; i<a.size(); i++)
+    {
+        cout<<a[i]<<"\t";
+        if (i%10==9)
+            cout<<endl;
+    }
+    cout<<"-------------------------"<<endl;
 }
 
 double sqr(double x)
@@ -64,7 +64,7 @@ int my_cmp(pair<double,int> a,pair<double,int> b)
 
 double cmp(pair<int,double> a, pair<int,double> b)
 {
-	return a.second<b.second;
+    return a.second<b.second;
 }
 
 class Test{
@@ -78,11 +78,11 @@ class Test{
 public:
     void add(int x,int y,int z, bool flag)
     {
-    	if (flag)
-    	{
-        	fb_h.push_back(x);
-        	fb_r.push_back(z);
-        	fb_l.push_back(y);
+        if (flag)
+        {
+            fb_h.push_back(x);
+            fb_r.push_back(z);
+            fb_l.push_back(y);
         }
         ok[make_pair(x,z)][y]=1;
     }
@@ -99,7 +99,7 @@ public:
     {
         double sum=0;
         if (L1_flag)
-        	for (int ii=0; ii<n; ii++)
+            for (int ii=0; ii<n; ii++)
             sum+=-fabs(entity_vec[e2][ii]-entity_vec[e1][ii]-relation_vec[rel][ii]);
         else
         for (int ii=0; ii<n; ii++)
@@ -126,98 +126,98 @@ public:
             for (int ii=0; ii<n; ii++)
                 fscanf(f3,"%lf",&entity_vec[i][ii]);
             if (vec_len(entity_vec[i])-1>1e-3)
-            	cout<<"wrong_entity"<<i<<' '<<vec_len(entity_vec[i])<<endl;
+                cout<<"wrong_entity"<<i<<' '<<vec_len(entity_vec[i])<<endl;
         }
         fclose(f1);
         fclose(f3);
-		double lsum=0 ,lsum_filter= 0;
-		double rsum = 0,rsum_filter=0;
-		double lp_n=0,lp_n_filter;
-		double rp_n=0,rp_n_filter;
-		map<int,double> lsum_r,lsum_filter_r;
-		map<int,double> rsum_r,rsum_filter_r;
-		map<int,double> lp_n_r,lp_n_filter_r;
-		map<int,double> rp_n_r,rp_n_filter_r;
-		map<int,int> rel_num;
+        double lsum=0 ,lsum_filter= 0;
+        double rsum = 0,rsum_filter=0;
+        double lp_n=0,lp_n_filter;
+        double rp_n=0,rp_n_filter;
+        map<int,double> lsum_r,lsum_filter_r;
+        map<int,double> rsum_r,rsum_filter_r;
+        map<int,double> lp_n_r,lp_n_filter_r;
+        map<int,double> rp_n_r,rp_n_filter_r;
+        map<int,int> rel_num;
 
         for (int testid = 0; testid<fb_l.size(); testid+=1)
-		{
-			int h = fb_h[testid];
-			int l = fb_l[testid];
-			int rel = fb_r[testid];
-			double tmp = calc_sum(h,l,rel);
-			rel_num[rel]+=1;
-			vector<pair<int,double> > a;
-			for (int i=0; i<entity_num; i++)
-			{
-				double sum = calc_sum(i,l,rel);
-				a.push_back(make_pair(i,sum));
-			}
-			sort(a.begin(),a.end(),cmp);
-			double ttt=0;
-			int filter = 0;
-			for (int i=a.size()-1; i>=0; i--)
-			{
-				if (ok[make_pair(a[i].first,rel)].count(l)>0)
-					ttt++;
-			    if (ok[make_pair(a[i].first,rel)].count(l)==0)
-			    	filter+=1;
-				if (a[i].first ==h)
-				{
-					lsum+=a.size()-i;
-					lsum_filter+=filter+1;
-					lsum_r[rel]+=a.size()-i;
-					lsum_filter_r[rel]+=filter+1;
-					if (a.size()-i<=10)
-					{
-						lp_n+=1;
-						lp_n_r[rel]+=1;
-					}
-					if (filter<10)
-					{
-						lp_n_filter+=1;
-						lp_n_filter_r[rel]+=1;
-					}
-					break;
-				}
-			}
-			a.clear();
-			for (int i=0; i<entity_num; i++)
-			{
-				double sum = calc_sum(h,i,rel);
-				a.push_back(make_pair(i,sum));
-			}
-			sort(a.begin(),a.end(),cmp);
-			ttt=0;
-			filter=0;
-			for (int i=a.size()-1; i>=0; i--)
-			{
-				if (ok[make_pair(h,rel)].count(a[i].first)>0)
-					ttt++;
-			    if (ok[make_pair(h,rel)].count(a[i].first)==0)
-			    	filter+=1;
-				if (a[i].first==l)
-				{
-					rsum+=a.size()-i;
-					rsum_filter+=filter+1;
-					rsum_r[rel]+=a.size()-i;
-					rsum_filter_r[rel]+=filter+1;
-					if (a.size()-i<=10)
-					{
-						rp_n+=1;
-						rp_n_r[rel]+=1;
-					}
-					if (filter<10)
-					{
-						rp_n_filter+=1;
-						rp_n_filter_r[rel]+=1;
-					}
-					break;
-				}
-			}
+        {
+            int h = fb_h[testid];
+            int l = fb_l[testid];
+            int rel = fb_r[testid];
+            double tmp = calc_sum(h,l,rel);
+            rel_num[rel]+=1;
+            vector<pair<int,double> > a;
+            for (int i=0; i<entity_num; i++)
+            {
+                double sum = calc_sum(i,l,rel);
+                a.push_back(make_pair(i,sum));
+            }
+            sort(a.begin(),a.end(),cmp);
+            double ttt=0;
+            int filter = 0;
+            for (int i=a.size()-1; i>=0; i--)
+            {
+                if (ok[make_pair(a[i].first,rel)].count(l)>0)
+                    ttt++;
+                if (ok[make_pair(a[i].first,rel)].count(l)==0)
+                    filter+=1;
+                if (a[i].first ==h)
+                {
+                    lsum+=a.size()-i;
+                    lsum_filter+=filter+1;
+                    lsum_r[rel]+=a.size()-i;
+                    lsum_filter_r[rel]+=filter+1;
+                    if (a.size()-i<=10)
+                    {
+                        lp_n+=1;
+                        lp_n_r[rel]+=1;
+                    }
+                    if (filter<10)
+                    {
+                        lp_n_filter+=1;
+                        lp_n_filter_r[rel]+=1;
+                    }
+                    break;
+                }
+            }
+            a.clear();
+            for (int i=0; i<entity_num; i++)
+            {
+                double sum = calc_sum(h,i,rel);
+                a.push_back(make_pair(i,sum));
+            }
+            sort(a.begin(),a.end(),cmp);
+            ttt=0;
+            filter=0;
+            for (int i=a.size()-1; i>=0; i--)
+            {
+                if (ok[make_pair(h,rel)].count(a[i].first)>0)
+                    ttt++;
+                if (ok[make_pair(h,rel)].count(a[i].first)==0)
+                    filter+=1;
+                if (a[i].first==l)
+                {
+                    rsum+=a.size()-i;
+                    rsum_filter+=filter+1;
+                    rsum_r[rel]+=a.size()-i;
+                    rsum_filter_r[rel]+=filter+1;
+                    if (a.size()-i<=10)
+                    {
+                        rp_n+=1;
+                        rp_n_r[rel]+=1;
+                    }
+                    if (filter<10)
+                    {
+                        rp_n_filter+=1;
+                        rp_n_filter_r[rel]+=1;
+                    }
+                    break;
+                }
+            }
         }
-		cout<<"left:"<<lsum/fb_l.size()<<'\t'<<lp_n/fb_l.size()<<"\t"<<lsum_filter/fb_l.size()<<'\t'<<lp_n_filter/fb_l.size()<<endl;
-		cout<<"right:"<<rsum/fb_r.size()<<'\t'<<rp_n/fb_r.size()<<'\t'<<rsum_filter/fb_r.size()<<'\t'<<rp_n_filter/fb_r.size()<<endl;
+        cout<<"left:"<<lsum/fb_l.size()<<'\t'<<lp_n/fb_l.size()<<"\t"<<lsum_filter/fb_l.size()<<'\t'<<lp_n_filter/fb_l.size()<<endl;
+        cout<<"right:"<<rsum/fb_r.size()<<'\t'<<rp_n/fb_r.size()<<'\t'<<rsum_filter/fb_r.size()<<'\t'<<rp_n_filter/fb_r.size()<<endl;
     }
 
 };
@@ -226,25 +226,25 @@ Test test;
 void prepare()
 {
     FILE* f1 = fopen("../data/entity2id.txt","r");
-	FILE* f2 = fopen("../data/relation2id.txt","r");
-	int x;
-	while (fscanf(f1,"%s%d",buf,&x)==2)
-	{
-		string st=buf;
-		entity2id[st]=x;
-		id2entity[x]=st;
-		mid2type[st]="None";
-		entity_num++;
-	}
-	while (fscanf(f2,"%s%d",buf,&x)==2)
-	{
-		string st=buf;
-		relation2id[st]=x;
-		id2relation[x]=st;
-		relation_num++;
-	}
+    FILE* f2 = fopen("../data/relation2id.txt","r");
+    int x;
+    while (fscanf(f1,"%s%d",buf,&x)==2)
+    {
+        string st=buf;
+        entity2id[st]=x;
+        id2entity[x]=st;
+        mid2type[st]="None";
+        entity_num++;
+    }
+    while (fscanf(f2,"%s%d",buf,&x)==2)
+    {
+        string st=buf;
+        relation2id[st]=x;
+        id2relation[x]=st;
+        relation_num++;
+    }
     FILE* f_kb = fopen("../data/test.txt","r");
-	while (fscanf(f_kb,"%s",buf)==1)
+    while (fscanf(f_kb,"%s",buf)==1)
     {
         string s1=buf;
         fscanf(f_kb,"%s",buf);
@@ -261,7 +261,7 @@ void prepare()
         }
         if (relation2id.count(s3)==0)
         {
-        	cout<<"miss relation:"<<s3<<endl;
+            cout<<"miss relation:"<<s3<<endl;
             relation2id[s3] = relation_num;
             relation_num++;
         }
@@ -269,7 +269,7 @@ void prepare()
     }
     fclose(f_kb);
     FILE* f_kb1 = fopen("../data/train.txt","r");
-	while (fscanf(f_kb1,"%s",buf)==1)
+    while (fscanf(f_kb1,"%s",buf)==1)
     {
         string s1=buf;
         fscanf(f_kb1,"%s",buf);
@@ -298,7 +298,7 @@ void prepare()
     }
     fclose(f_kb1);
     FILE* f_kb2 = fopen("../data/valid.txt","r");
-	while (fscanf(f_kb2,"%s",buf)==1)
+    while (fscanf(f_kb2,"%s",buf)==1)
     {
         string s1=buf;
         fscanf(f_kb2,"%s",buf);
