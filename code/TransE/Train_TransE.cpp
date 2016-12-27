@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "TransE/transETrainer.h"
 #include "common/trainer.h"
 #include "common/utils.h"
 
@@ -37,7 +38,8 @@ int main(int argc, char**argv) {
     std::cout << "margin = " << margin << std::endl;
     std::cout << "method = " << version << std::endl;
 
-    common::Trainer trainer(n, rate, margin, method);
-    trainer.loadFiles();
-    trainer.train();
+    common::Trainer* trainer = new transe::TransETrainer(n, rate, margin, method);
+    trainer->loadFiles();
+    trainer->train();
+    trainer->write();
 }

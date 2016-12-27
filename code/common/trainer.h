@@ -16,58 +16,70 @@
 namespace common {
 
 class Trainer {
-   public:
-      static const std::string DATA_DIR;
-      static const std::string ENTITY_ID_FILE;
-      static const std::string RELATION_ID_FILE;
-      static const std::string TRAIN_FILE;
+    public:
+        static const std::string DATA_DIR;
+        static const std::string ENTITY_ID_FILE;
+        static const std::string RELATION_ID_FILE;
+        static const std::string TRAIN_FILE;
 
-      explicit Trainer(int n,  double learningRate, double margin, int method)
-            : n_(n), learningRate_(learningRate), margin_(margin), method_(method) {}
+        explicit Trainer(int embeddingSize,  double learningRate, double margin, int method)
+                : embeddingSize_(embeddingSize), learningRate_(learningRate), margin_(margin), method_(method) {}
 
-      void add(int x, int y, int z);
-      void loadFiles();
-      void train();
+        void add(int head, int tail, int relation);
+        void loadFiles();
+        void train();
 
-   private:
-      int n_;
-      int method_;
-      double learningRate_;
-      double margin_;
+        virtual void write();
 
-      double lossValue_;//loss function value
+    protected:
+        int embeddingSize_;
+        int method_;
+        double learningRate_;
+        double margin_;
 
-      std::vector<std::vector<double>> relation_vec_;
-      std::vector<std::vector<double>> entity_vec_;
+        double lossValue_;//loss function value
 
-      int numRelations_;
-      int numEntities_;
+        std::vector<std::vector<double>> relation_vec_;
+        std::vector<std::vector<double>> entity_vec_;
 
-      // TODO(eriq): Better name
-      std::map<int,double> left_num;
-      std::map<int,double> right_num;
+        int numRelations_;
+        int numEntities_;
 
-      double count;
-      double count1;//loss function gradient
-      double belta;
-      double res1;
+        // <relation, frequency>
+        // The mean co-occurance count of this relation with entities that appear in the head.
+        std::map<int,double> relationHeadMeanCooccurrence_;
+        // The mean co-occurance count of this relation with entities that appear in the tail.
+        std::map<int,double> relationTailMeanCooccurrence_;
 
-      std::vector<int> fb_h,fb_l,fb_r;
-      std::vector<std::vector<int> > feature;
+        // The triples separated out into three vectors.
+        std::vector<int> heads_;
+        std::vector<int> tails_;
+        std::vector<int> relations_;
 
-      std::vector<std::vector<double>> relation_tmp_;
-      std::vector<std::vector<double>> entity_tmp_;
+        // {<head, relation>: {tail: 1}}
+        std::map<std::pair<int, int>, std::map<int, int> > triples_;
 
-      std::map<std::pair<int,int>, std::map<int,int> > ok;
+        //
 
-      //
+        void bfgs();
+        void train_kb(int e1_a,int e2_a,int rel_a,int e1_b,int e2_b,int rel_b);
+        std::string methodName();
 
-      void bfgs();
-      double calc_sum(int e1,int e2,int rel);
-      void gradient(int e1_a,int e2_a,int rel_a,int e1_b,int e2_b,int rel_b);
-      void train_kb(int e1_a,int e2_a,int rel_a,int e1_b,int e2_b,int rel_b);
+        // The first value to put in all the embedding vectors.
+        virtual double initialEmbeddingValue() = 0;
 
-      std::string methodName();
+        virtual void gradientUpdate(int head, int tail, int relation, bool corrupted) = 0;
+
+        // Called after a batch has just finished.
+        virtual void postbatch();
+
+        // Called before a new batch is started.
+        virtual void prebatch();
+
+        // Called as the first action in train().
+        virtual void prepTrain();
+
+        virtual double tripleEnergy(int head, int tail, int relation) = 0;
 };
 
 }  // namespace common

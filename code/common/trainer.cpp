@@ -14,9 +14,6 @@
 
 #define ID_STRING_MAX_LEN 512
 
-// TODO(eriq): Config
-#define L1_FLAG true
-
 namespace common {
 
 const std::string Trainer::DATA_DIR = "../data";
@@ -24,48 +21,42 @@ const std::string Trainer::ENTITY_ID_FILE = "entity2id.txt";
 const std::string Trainer::RELATION_ID_FILE = "relation2id.txt";
 const std::string Trainer::TRAIN_FILE = "train.txt";
 
-void Trainer::add(int x, int y, int z) {
-   fb_h.push_back(x);
-   fb_r.push_back(z);
-   fb_l.push_back(y);
+void Trainer::add(int head, int tail, int relation) {
+    heads_.push_back(head);
+    tails_.push_back(tail);
+    relations_.push_back(relation);
 
-   ok[std::make_pair(x, z)][y] = 1;
+    triples_[std::make_pair(head, relation)][tail] = 1;
+}
+
+void Trainer::prepTrain() {
+    relation_vec_.resize(numRelations_);
+    for (int i = 0; i <relation_vec_.size(); i++) {
+        relation_vec_[i].resize(embeddingSize_);
+    }
+
+    entity_vec_.resize(numEntities_);
+    for (int i = 0; i <entity_vec_.size(); i++) {
+        entity_vec_[i].resize(embeddingSize_);
+    }
+
+    for (int i = 0; i < numRelations_; i++) {
+        for (int j = 0; j < embeddingSize_; j++) {
+            relation_vec_[i][j] = initialEmbeddingValue();
+        }
+        norm(relation_vec_[i]);
+    }
+
+    for (int i = 0; i < numEntities_; i++) {
+        for (int j = 0; j < embeddingSize_; j++) {
+            entity_vec_[i][j] = initialEmbeddingValue();
+        }
+        norm(entity_vec_[i]);
+    }
 }
 
 void Trainer::train() {
-   relation_vec_.resize(numRelations_);
-   for (int i = 0; i <relation_vec_.size(); i++) {
-      relation_vec_[i].resize(n_);
-   }
-
-   entity_vec_.resize(numEntities_);
-   for (int i = 0; i <entity_vec_.size(); i++) {
-      entity_vec_[i].resize(n_);
-   }
-
-   relation_tmp_.resize(numRelations_);
-   for (int i = 0; i <relation_tmp_.size(); i++) {
-      relation_tmp_[i].resize(n_);
-   }
-
-   entity_tmp_.resize(numEntities_);
-   for (int i = 0; i <entity_tmp_.size(); i++) {
-      entity_tmp_[i].resize(n_);
-   }
-
-   for (int i = 0; i <numRelations_; i++) {
-      for (int ii = 0; ii <n_; ii++) {
-         relation_vec_[i][ii] = randn(0,1.0/n_,-6/sqrt(n_),6/sqrt(n_));
-      }
-   }
-
-   for (int i = 0; i <numEntities_; i++) {
-      for (int ii = 0; ii <n_; ii++) {
-         entity_vec_[i][ii] = randn(0,1.0/n_,-6/sqrt(n_),6/sqrt(n_));
-      }
-      norm(entity_vec_[i]);
-   }
-
+   prepTrain();
    bfgs();
 }
 
@@ -77,113 +68,83 @@ std::string Trainer::methodName() {
     return "unif";
 }
 
+void Trainer::prebatch() {}
+
+void Trainer::postbatch() {}
+
 void Trainer::bfgs() {
-   lossValue_ = 0;
+    // TODO(eriq): Config
+    int numBatches = 100;
+    int maxEpochs = 1000;
 
-   // TODO(eriq): Config
-   int numBatches = 100;
-   int maxEpochs = 1000;
+    int batchsize = heads_.size() / numBatches;
 
-   int batchsize = fb_h.size() / numBatches;
+    for (int epoch = 0; epoch < maxEpochs; epoch++) {
+        lossValue_ = 0;
 
-   for (int epoch = 0; epoch < maxEpochs; epoch++) {
+        for (int batch = 0; batch < numBatches; batch++) {
+            prebatch();
 
-      lossValue_=0;
-      for (int batch = 0; batch<numBatches; batch++)
-      {
-         relation_tmp_=relation_vec_;
-         entity_tmp_ = entity_vec_;
-         for (int k=0; k<batchsize; k++)
-         {
-            int i=randMax(fb_h.size());
-            int j=randMax(numEntities_);
-            double pr = 1000*right_num[fb_r[i]]/(right_num[fb_r[i]]+left_num[fb_r[i]]);
-            if (method_ ==0) {
-               pr = 500;
+            for (int k = 0; k < batchsize; k++)
+            {
+                int i = randMax(heads_.size());
+                int j = randMax(numEntities_);
+
+                double pr = 1000 * relationTailMeanCooccurrence_[relations_[i]] / (relationTailMeanCooccurrence_[relations_[i]] + relationHeadMeanCooccurrence_[relations_[i]]);
+
+                if (method_ == 0) {
+                    pr = 500;
+                }
+
+                if (std::rand() % 1000 < pr) {
+                    while (triples_[std::make_pair(heads_[i], relations_[i])].count(j) > 0) {
+                        j = randMax(numEntities_);
+                    }
+                    train_kb(heads_[i], tails_[i], relations_[i], heads_[i], j, relations_[i]);
+                } else {
+                    while (triples_[std::make_pair(j, relations_[i])].count(tails_[i]) > 0) {
+                        j = randMax(numEntities_);
+                    }
+                    train_kb(heads_[i], tails_[i], relations_[i], j, tails_[i], relations_[i]);
+                }
             }
 
-            if (std::rand() % 1000 < pr) {
-               while (ok[std::make_pair(fb_h[i],fb_r[i])].count(j)>0) {
-                  j = randMax(numEntities_);
-               }
-               train_kb(fb_h[i],fb_l[i],fb_r[i],fb_h[i],j,fb_r[i]);
-            } else {
-               while (ok[std::make_pair(j, fb_r[i])].count(fb_l[i]) > 0) {
-                  j = randMax(numEntities_);
-               }
-               train_kb(fb_h[i],fb_l[i],fb_r[i],j,fb_l[i],fb_r[i]);
-            }
+            postbatch();
+        }
 
-            norm(relation_tmp_[fb_r[i]]);
-            norm(entity_tmp_[fb_h[i]]);
-            norm(entity_tmp_[fb_l[i]]);
-            norm(entity_tmp_[j]);
-         }
-         relation_vec_ = relation_tmp_;
-         entity_vec_ = entity_tmp_;
-      }
-      std::cout<<"epoch:"<<epoch<<' '<<lossValue_<<std::endl;
-      FILE* f2 = fopen(("relation2vec." + methodName()).c_str(),"w");
-      FILE* f3 = fopen(("entity2vec." + methodName()).c_str(),"w");
-      for (int i = 0; i <numRelations_; i++)
-      {
-         for (int ii = 0; ii <n_; ii++)
-               fprintf(f2,"%.6lf\t",relation_vec_[i][ii]);
-         fprintf(f2,"\n");
-      }
-      for (int i = 0; i <numEntities_; i++)
-      {
-         for (int ii = 0; ii <n_; ii++)
-               fprintf(f3,"%.6lf\t",entity_vec_[i][ii]);
-         fprintf(f3,"\n");
-      }
-      fclose(f2);
-      fclose(f3);
-   }
+        // TODO(eriq): Debug
+        std::cout << "epoch: " << epoch << " " << lossValue_ << std::endl;
+    }
 }
 
-double Trainer::calc_sum(int e1,int e2,int rel) {
-   double sum=0;
-   if (L1_FLAG)
-         for (int ii = 0; ii <n_; ii++)
-            sum+=fabs(entity_vec_[e2][ii]-entity_vec_[e1][ii]-relation_vec_[rel][ii]);
-   else
-         for (int ii = 0; ii <n_; ii++)
-            sum+=sqr(entity_vec_[e2][ii]-entity_vec_[e1][ii]-relation_vec_[rel][ii]);
-   return sum;
+void Trainer::write() {
+    FILE* relationOutFile = fopen(("relation2vec." + methodName()).c_str(), "w");
+    for (int i = 0; i < numRelations_; i++) {
+        for (int j = 0; j < embeddingSize_; j++) {
+            fprintf(relationOutFile, "%.6lf\t", relation_vec_[i][j]);
+        }
+        fprintf(relationOutFile, "\n");
+    }
+    fclose(relationOutFile);
+
+    FILE* entityOutFile = fopen(("entity2vec." + methodName()).c_str(), "w");
+    for (int i = 0; i < numEntities_; i++) {
+        for (int j = 0; j < embeddingSize_; j++) {
+            fprintf(entityOutFile, "%.6lf\t", entity_vec_[i][j]);
+        }
+        fprintf(entityOutFile, "\n");
+    }
+    fclose(entityOutFile);
 }
 
-void Trainer::gradient(int e1_a,int e2_a,int rel_a,int e1_b,int e2_b,int rel_b) {
-   for (int ii = 0; ii <n_; ii++) {
-
-         double x = 2*(entity_vec_[e2_a][ii]-entity_vec_[e1_a][ii]-relation_vec_[rel_a][ii]);
-         if (L1_FLAG)
-            if (x>0)
-               x=1;
-            else
-               x=-1;
-         relation_tmp_[rel_a][ii]-=-1*learningRate_*x;
-         entity_tmp_[e1_a][ii]-=-1*learningRate_*x;
-         entity_tmp_[e2_a][ii]+=-1*learningRate_*x;
-         x = 2*(entity_vec_[e2_b][ii]-entity_vec_[e1_b][ii]-relation_vec_[rel_b][ii]);
-         if (L1_FLAG)
-            if (x>0)
-               x=1;
-            else
-               x=-1;
-         relation_tmp_[rel_b][ii]-=learningRate_*x;
-         entity_tmp_[e1_b][ii]-=learningRate_*x;
-         entity_tmp_[e2_b][ii]+=learningRate_*x;
-   }
-}
-
-void Trainer::train_kb(int e1_a,int e2_a,int rel_a,int e1_b,int e2_b,int rel_b) {
-   double sum1 = calc_sum(e1_a,e2_a,rel_a);
-   double sum2 = calc_sum(e1_b,e2_b,rel_b);
-   if (sum1+margin_>sum2)
-   {
-         lossValue_+=margin_+sum1-sum2;
-         gradient( e1_a, e2_a, rel_a, e1_b, e2_b, rel_b);
+// a is normal, b is corrupted.
+void Trainer::train_kb(int aHead, int aTail, int aRelation, int bHead, int bTail, int bRelation) {
+   double sum1 = tripleEnergy(aHead, aTail, aRelation);
+   double sum2 = tripleEnergy(bHead, bTail, bRelation);
+   if (sum1 + margin_ > sum2) {
+         lossValue_ += margin_ + sum1 - sum2;
+         gradientUpdate(aHead, aTail, aRelation, false);
+         gradientUpdate(bHead, bTail, bRelation, true);
    }
 }
 
@@ -191,8 +152,10 @@ void Trainer::loadFiles() {
     std::map<std::string, int> entity2id;
     std::map<std::string, int> relation2id;
 
-    std::map<int, std::map<int, int>> left_entity;
-    std::map<int, std::map<int, int>> right_entity;
+    // relation/entity co-orrirance counts.
+    // <relation, <entity, count>>
+    std::map<int, std::map<int, int>> headCooccurrence;
+    std::map<int, std::map<int, int>> tailCooccurrence;
 
     int entityId;
     char headIdStringBuf[ID_STRING_MAX_LEN];
@@ -242,33 +205,36 @@ void Trainer::loadFiles() {
             continue;
         }
 
-        left_entity[relation2id[relationIdString]][entity2id[headIdString]]++;
-        right_entity[relation2id[relationIdString]][entity2id[tailIdString]]++;
+        headCooccurrence[relation2id[relationIdString]][entity2id[headIdString]]++;
+        tailCooccurrence[relation2id[relationIdString]][entity2id[tailIdString]]++;
+
         add(entity2id[headIdString], entity2id[tailIdString], relation2id[relationIdString]);
     }
     fclose(trainFile);
 
     for (int i = 0; i < relation2id.size(); i++) {
-        double sum1 = 0;
-        double sum2 = 0;
-
-        for (std::map<int, int>::iterator it = left_entity[i].begin(); it != left_entity[i].end(); it++) {
-            sum1++;
-            sum2 += it->second;
+        // Sum the number of times this relation (i) appears.
+        double totalHeadRelationCooccurrences = 0;
+        for (std::map<int, int>::iterator it = headCooccurrence[i].begin(); it != headCooccurrence[i].end(); it++) {
+            totalHeadRelationCooccurrences += it->second;
         }
 
-        left_num[i] = sum2 / sum1;
-    }
-
-    for (int i = 0; i < relation2id.size(); i++) {
-        double sum1=0,sum2=0;
-
-        for (std::map<int, int>::iterator it = right_entity[i].begin(); it != right_entity[i].end(); it++) {
-            sum1++;
-            sum2 += it->second;
+        if (headCooccurrence[i].size() == 0) {
+            relationHeadMeanCooccurrence_[i] = 0;
+        } else {
+            relationHeadMeanCooccurrence_[i] = totalHeadRelationCooccurrences / headCooccurrence[i].size();
         }
 
-        right_num[i] = sum2 / sum1;
+        double totalTailRelationCooccurrences = 0;
+        for (std::map<int, int>::iterator it = tailCooccurrence[i].begin(); it != tailCooccurrence[i].end(); it++) {
+            totalTailRelationCooccurrences += it->second;
+        }
+
+        if (tailCooccurrence[i].size() == 0) {
+            relationTailMeanCooccurrence_[i] = 0;
+        } else {
+            relationTailMeanCooccurrence_[i] = totalTailRelationCooccurrences / tailCooccurrence[i].size();
+        }
     }
 
     numRelations_ = relation2id.size();
@@ -277,36 +243,5 @@ void Trainer::loadFiles() {
     std::cout << "Number of Relations: " << relation2id.size() << std::endl;
     std::cout << "Number of Entities: " << entity2id.size() << std::endl;
 }
-
-// TODO(eriq)
-/*
-int main(int argc, char**argv) {
-    srand((unsigned) time(NULL));
-    int method = 1;
-    int n_ = 100;
-    double rate = 0.001;
-    double margin = 1;
-    int i;
-
-    if ((i = argpos((char *)"-size", argc, argv)) > 0) n_ = atoi(argv[i + 1]);
-    if ((i = argpos((char *)"-margin", argc, argv)) > 0) margin = atoi(argv[i + 1]);
-    if ((i = argpos((char *)"-rate", argc, argv)) > 0) rate = atof(argv[i + 1]);
-    if ((i = argpos((char *)"-method", argc, argv)) > 0) method = atoi(argv[i + 1]);
-
-    if (method) {
-        version = "bern";
-    } else {
-        version = "unif";
-    }
-
-    std::cout << "size = " << n_ << std::endl;
-    std::cout << "learing rate = " << rate << std::endl;
-    std::cout << "margin = " << margin << std::endl;
-    std::cout << "method = " << version << std::endl;
-
-    prepare();
-    trainer.train(n_, rate, margin, method);
-}
-*/
 
 }  // namespace common

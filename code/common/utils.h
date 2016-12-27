@@ -15,6 +15,7 @@ double sqr(double x);
 double vec_len(std::vector<double> &a);
 int argpos(char *str, int argc, char **argv);
 void norm(std::vector<double> &a);
+void norm(std::vector<double> &a, std::vector<double> &b, double rate);
 int randMax(int x);
 
 }   // namespace common

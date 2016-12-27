@@ -1,5 +1,6 @@
 #include "common/utils.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
@@ -61,12 +62,46 @@ int argpos(char *str, int argc, char **argv) {
 }
 
 void norm(std::vector<double> &a) {
-   double x = vec_len(a);
-   if (x > 1) {
-      for (int ii = 0; ii < a.size(); ii++) {
-         a[ii] /= x;
+   double len = vec_len(a);
+   if (len > 1) {
+      for (int i = 0; i < a.size(); i++) {
+         a[i] /= len;
       }
    }
+}
+
+void norm(std::vector<double> &a, std::vector<double> &b, double rate) {
+    assert(a.size() == b.size());
+
+    norm(b);
+    double sum = 0;
+
+    while (true) {
+        for (int i = 0; i < b.size(); i++) {
+            sum += sqr(b[i]);
+        }
+        sum = std::sqrt(sum);
+
+        for (int i = 0; i < b.size(); i++) {
+            b[i] /= sum;
+        }
+
+        double x = 0;
+        for (int i = 0; i < a.size(); i++) {
+            x += b[i] * a[i];
+        }
+
+        if (x > 0.1) {
+            for (int i = 0; i < a.size(); i++) {
+                a[i] -= rate * b[i];
+                b[i] -= rate * a[i];
+            }
+        } else {
+            break;
+        }
+    }
+
+    norm(b);
 }
 
 int randMax(int x) {

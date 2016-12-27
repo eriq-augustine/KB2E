@@ -9,8 +9,10 @@ BIN_DIR=bin
 CPP_FILES = $(shell find . -name *.cpp)
 OBJ_FILES = $(CPP_FILES:%.cpp=%.o)
 
-COMMON_CPP_FILES = $(shell find common -name *.cpp)
-COMMON_OBJ_FILES = $(COMMON_CPP_FILES:%.cpp=%.o)
+# All files without a main.
+# We will bundle these together in a single archive.
+NO_MAIN_CPP_FILES = $(shell find -name *.cpp | xargs grep -L 'int main' | sed 's/^\.\///')
+NO_MAIN_OBJ_FILES = $(NO_MAIN_CPP_FILES:%.cpp=%.o)
 
 all: objects common mains
 
@@ -24,7 +26,7 @@ objects: $(OBJ_FILES)
 
 # The common code that we will put in an archive.
 common: objects binDir
-	$(ARCHIVE) $(ARCHIVE_FLAGS) $(BIN_DIR)/common.a $(COMMON_OBJ_FILES)
+	$(ARCHIVE) $(ARCHIVE_FLAGS) $(BIN_DIR)/common.a $(NO_MAIN_OBJ_FILES)
 
 # All the files that have mains.
 mains: binDir trainTransE trainTransH testTransE
