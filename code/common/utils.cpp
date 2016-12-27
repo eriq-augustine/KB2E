@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "common/constants.h"
+
 namespace common {
 
 // normal distribution

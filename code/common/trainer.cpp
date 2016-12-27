@@ -6,49 +6,64 @@
 #include <vector>
 #include <string>
 
+#include "common/constants.h"
 #include "common/utils.h"
-
-#define ID_STRING_MAX_LEN 512
 
 namespace common {
 
 const std::string Trainer::DATA_DIR = "../data";
+
 const std::string Trainer::ENTITY_ID_FILE = "entity2id.txt";
 const std::string Trainer::RELATION_ID_FILE = "relation2id.txt";
 const std::string Trainer::TRAIN_FILE = "train.txt";
 
-void Trainer::add(int head, int tail, int relation) {
-    heads_.push_back(head);
-    tails_.push_back(tail);
-    relations_.push_back(relation);
+const std::string Trainer::ENTITY_OUT_FILE_BASENAME = "entity2vec";
+const std::string Trainer::RELATION_OUT_FILE_BASENAME = "relation2vec";
 
-    triples_[std::make_pair(head, relation)][tail] = 1;
+Trainer::Trainer(int embeddingSize,  double learningRate, double margin,
+                 int method, int numBatches, int maxEpochs)
+      : embeddingSize_(embeddingSize), learningRate_(learningRate), margin_(margin),
+        method_(method), numBatches_(numBatches), maxEpochs_(maxEpochs) {
+   embeddingSize_ = embeddingSize_ > 0 ? embeddingSize_ : DEFAULT_EMBEDDING_SIZE;
+   learningRate_ = learningRate_ > 0 ? learningRate_ : DEFAULT_LEARNING_RATE;
+   margin_ = margin_ > 0 ? margin_ : DEFAULT_MARGIN;
+   method_ = (method_ == METHOD_BERN || method_ == METHOD_UNIF) ? method_ : DEFAULT_METHOD;
+   numBatches_ = numBatches_ > 0 ? numBatches_ : DEFAULT_NUM_BATCHES;
+   maxEpochs_ = maxEpochs_ > 0 ? maxEpochs_ : DEFAULT_MAX_EPOCHS;
+}
+
+void Trainer::add(int head, int tail, int relation) {
+   heads_.push_back(head);
+   tails_.push_back(tail);
+   relations_.push_back(relation);
+
+   triples_[std::make_pair(head, relation)][tail] = 1;
 }
 
 void Trainer::prepTrain() {
-    relation_vec_.resize(numRelations_);
-    for (int i = 0; i <relation_vec_.size(); i++) {
-        relation_vec_[i].resize(embeddingSize_);
-    }
+   relation_vec_.resize(numRelations_);
+   for (int i = 0; i <relation_vec_.size(); i++) {
+      relation_vec_[i].resize(embeddingSize_);
+   }
 
-    entity_vec_.resize(numEntities_);
-    for (int i = 0; i <entity_vec_.size(); i++) {
-        entity_vec_[i].resize(embeddingSize_);
-    }
+   entity_vec_.resize(numEntities_);
+   for (int i = 0; i <entity_vec_.size(); i++) {
+      entity_vec_[i].resize(embeddingSize_);
+   }
 
-    for (int i = 0; i < numRelations_; i++) {
-        for (int j = 0; j < embeddingSize_; j++) {
-            relation_vec_[i][j] = initialEmbeddingValue();
-        }
-        norm(relation_vec_[i]);
-    }
+   for (int i = 0; i < numRelations_; i++) {
+      for (int j = 0; j < embeddingSize_; j++) {
+         relation_vec_[i][j] = initialEmbeddingValue();
+      }
+      norm(relation_vec_[i]);
+   }
 
-    for (int i = 0; i < numEntities_; i++) {
-        for (int j = 0; j < embeddingSize_; j++) {
-            entity_vec_[i][j] = initialEmbeddingValue();
-        }
-        norm(entity_vec_[i]);
-    }
+   for (int i = 0; i < numEntities_; i++) {
+      for (int j = 0; j < embeddingSize_; j++) {
+         entity_vec_[i][j] = initialEmbeddingValue();
+      }
+      norm(entity_vec_[i]);
+   }
 }
 
 void Trainer::train() {
@@ -57,187 +72,181 @@ void Trainer::train() {
 }
 
 std::string Trainer::methodName() {
-    if (method_) {
-        return "bern";
-    }
+   if (method_ == METHOD_BERN) {
+      return METHOD_NAME_BERN;
+   }
 
-    return "unif";
+   return METHOD_NAME_UNIF;
 }
-
-void Trainer::prebatch() {}
-
-void Trainer::postbatch() {}
 
 void Trainer::bfgs() {
-    // TODO(eriq): Config
-    int numBatches = 100;
-    int maxEpochs = 1000;
+   int batchsize = heads_.size() / numBatches_;
+   double loss;
 
-    int batchsize = heads_.size() / numBatches;
+   for (int epoch = 0; epoch < maxEpochs_; epoch++) {
+      for (int batch = 0; batch < numBatches_; batch++) {
+         prebatch();
 
-    for (int epoch = 0; epoch < maxEpochs; epoch++) {
-        lossValue_ = 0;
+         for (int k = 0; k < batchsize; k++)
+         {
+            int i = randMax(heads_.size());
+            int j = randMax(numEntities_);
 
-        for (int batch = 0; batch < numBatches; batch++) {
-            prebatch();
+            double pr = 1000 * relationTailMeanCooccurrence_[relations_[i]] / (relationTailMeanCooccurrence_[relations_[i]] + relationHeadMeanCooccurrence_[relations_[i]]);
 
-            for (int k = 0; k < batchsize; k++)
-            {
-                int i = randMax(heads_.size());
-                int j = randMax(numEntities_);
-
-                double pr = 1000 * relationTailMeanCooccurrence_[relations_[i]] / (relationTailMeanCooccurrence_[relations_[i]] + relationHeadMeanCooccurrence_[relations_[i]]);
-
-                if (method_ == 0) {
-                    pr = 500;
-                }
-
-                if (std::rand() % 1000 < pr) {
-                    while (triples_[std::make_pair(heads_[i], relations_[i])].count(j) > 0) {
-                        j = randMax(numEntities_);
-                    }
-                    train_kb(heads_[i], tails_[i], relations_[i], heads_[i], j, relations_[i]);
-                } else {
-                    while (triples_[std::make_pair(j, relations_[i])].count(tails_[i]) > 0) {
-                        j = randMax(numEntities_);
-                    }
-                    train_kb(heads_[i], tails_[i], relations_[i], j, tails_[i], relations_[i]);
-                }
+            if (method_ == 0) {
+               pr = 500;
             }
 
-            postbatch();
-        }
+            if (std::rand() % 1000 < pr) {
+               while (triples_[std::make_pair(heads_[i], relations_[i])].count(j) > 0) {
+                  j = randMax(numEntities_);
+               }
+               loss = train_kb(heads_[i], tails_[i], relations_[i], heads_[i], j, relations_[i]);
+            } else {
+               while (triples_[std::make_pair(j, relations_[i])].count(tails_[i]) > 0) {
+                  j = randMax(numEntities_);
+               }
+               loss = train_kb(heads_[i], tails_[i], relations_[i], j, tails_[i], relations_[i]);
+            }
+         }
 
-        // TODO(eriq): Debug
-        std::cout << "epoch: " << epoch << " " << lossValue_ << std::endl;
-    }
-}
+         postbatch();
+      }
 
-void Trainer::write() {
-    FILE* relationOutFile = fopen(("relation2vec." + methodName()).c_str(), "w");
-    for (int i = 0; i < numRelations_; i++) {
-        for (int j = 0; j < embeddingSize_; j++) {
-            fprintf(relationOutFile, "%.6lf\t", relation_vec_[i][j]);
-        }
-        fprintf(relationOutFile, "\n");
-    }
-    fclose(relationOutFile);
-
-    FILE* entityOutFile = fopen(("entity2vec." + methodName()).c_str(), "w");
-    for (int i = 0; i < numEntities_; i++) {
-        for (int j = 0; j < embeddingSize_; j++) {
-            fprintf(entityOutFile, "%.6lf\t", entity_vec_[i][j]);
-        }
-        fprintf(entityOutFile, "\n");
-    }
-    fclose(entityOutFile);
-}
-
-// a is normal, b is corrupted.
-void Trainer::train_kb(int aHead, int aTail, int aRelation, int bHead, int bTail, int bRelation) {
-   double sum1 = tripleEnergy(aHead, aTail, aRelation);
-   double sum2 = tripleEnergy(bHead, bTail, bRelation);
-   if (sum1 + margin_ > sum2) {
-         lossValue_ += margin_ + sum1 - sum2;
-         gradientUpdate(aHead, aTail, aRelation, false);
-         gradientUpdate(bHead, bTail, bRelation, true);
+      // TODO(eriq): Debug
+      std::cout << "epoch: " << epoch << " " << loss << std::endl;
    }
 }
 
+void Trainer::write() {
+   FILE* relationOutFile = fopen((RELATION_OUT_FILE_BASENAME + "."  + methodName()).c_str(), "w");
+   for (int i = 0; i < numRelations_; i++) {
+      for (int j = 0; j < embeddingSize_; j++) {
+         fprintf(relationOutFile, "%.6lf\t", relation_vec_[i][j]);
+      }
+      fprintf(relationOutFile, "\n");
+   }
+   fclose(relationOutFile);
+
+   FILE* entityOutFile = fopen((ENTITY_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
+   for (int i = 0; i < numEntities_; i++) {
+      for (int j = 0; j < embeddingSize_; j++) {
+         fprintf(entityOutFile, "%.6lf\t", entity_vec_[i][j]);
+      }
+      fprintf(entityOutFile, "\n");
+   }
+   fclose(entityOutFile);
+}
+
+// a is normal, b is corrupted.
+double Trainer::train_kb(int aHead, int aTail, int aRelation, int bHead, int bTail, int bRelation) {
+   double loss = 0;
+   double normalEnergy = tripleEnergy(aHead, aTail, aRelation);
+   double corruptedEnergy = tripleEnergy(bHead, bTail, bRelation);
+   if (normalEnergy + margin_ > corruptedEnergy) {
+         loss += margin_ + normalEnergy - corruptedEnergy;
+         gradientUpdate(aHead, aTail, aRelation, false);
+         gradientUpdate(bHead, bTail, bRelation, true);
+   }
+
+   return loss;
+}
+
 void Trainer::loadFiles() {
-    std::map<std::string, int> entity2id;
-    std::map<std::string, int> relation2id;
+   std::map<std::string, int> entity2id;
+   std::map<std::string, int> relation2id;
 
-    // relation/entity co-orrirance counts.
-    // <relation, <entity, count>>
-    std::map<int, std::map<int, int>> headCooccurrence;
-    std::map<int, std::map<int, int>> tailCooccurrence;
+   // relation/entity co-orrirance counts.
+   // <relation, <entity, count>>
+   std::map<int, std::map<int, int>> headCooccurrence;
+   std::map<int, std::map<int, int>> tailCooccurrence;
 
-    int entityId;
-    char headIdStringBuf[ID_STRING_MAX_LEN];
+   int entityId;
+   char headIdStringBuf[ID_STRING_MAX_LEN];
 
-    // TODO(eriq): Better error handling with files.
+   // TODO(eriq): Better error handling with files.
 
-    FILE* entityIdFile = fopen((DATA_DIR + "/" + ENTITY_ID_FILE).c_str(), "r");
-    while (fscanf(entityIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
-        std::string entityIdString = headIdStringBuf;
-        entity2id[entityIdString] = entityId;
-    }
-    fclose(entityIdFile);
+   FILE* entityIdFile = fopen((DATA_DIR + "/" + ENTITY_ID_FILE).c_str(), "r");
+   while (fscanf(entityIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
+      std::string entityIdString = headIdStringBuf;
+      entity2id[entityIdString] = entityId;
+   }
+   fclose(entityIdFile);
 
-    FILE* relationIdFile = fopen((DATA_DIR + "/" + RELATION_ID_FILE).c_str(), "r");
-    while (fscanf(relationIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
-        std::string entityIdString = headIdStringBuf;
-        relation2id[entityIdString] = entityId;
-    }
-    fclose(relationIdFile);
+   FILE* relationIdFile = fopen((DATA_DIR + "/" + RELATION_ID_FILE).c_str(), "r");
+   while (fscanf(relationIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
+      std::string entityIdString = headIdStringBuf;
+      relation2id[entityIdString] = entityId;
+   }
+   fclose(relationIdFile);
 
-    char tailIdStringBuf[ID_STRING_MAX_LEN];
-    char relationIdStringBuf[ID_STRING_MAX_LEN];
+   char tailIdStringBuf[ID_STRING_MAX_LEN];
+   char relationIdStringBuf[ID_STRING_MAX_LEN];
 
-    FILE* trainFile = fopen((DATA_DIR + "/" + TRAIN_FILE).c_str(), "r");
-    while (fscanf(trainFile,"%s\t%s\t%s", headIdStringBuf, tailIdStringBuf, relationIdStringBuf) == 3) {
-        std::string headIdString = headIdStringBuf;
-        std::string tailIdString = tailIdStringBuf;
-        std::string relationIdString = relationIdStringBuf;
-        
-        bool fail = false;
-        if (entity2id.count(headIdString) == 0) {
-            std::cout << "Head entity found in training set that was not found in the identity file: " << headIdString << std::endl;
-            fail = true;
-        }
-        
-        if (entity2id.count(tailIdString) == 0) {
-            std::cout << "Tail entity found in training set that was not found in the identity file: " << tailIdString << std::endl;
-            fail = true;
-        }
-        
-        if (relation2id.count(relationIdString) == 0) {
-            std::cout << "Relation found in training set that was not found in the identity file: " << relationIdString << std::endl;
-            fail = true;
-        }
+   FILE* trainFile = fopen((DATA_DIR + "/" + TRAIN_FILE).c_str(), "r");
+   while (fscanf(trainFile,"%s\t%s\t%s", headIdStringBuf, tailIdStringBuf, relationIdStringBuf) == 3) {
+      std::string headIdString = headIdStringBuf;
+      std::string tailIdString = tailIdStringBuf;
+      std::string relationIdString = relationIdStringBuf;
 
-        if (fail) {
-            continue;
-        }
+      bool fail = false;
+      if (entity2id.count(headIdString) == 0) {
+         std::cout << "Head entity found in training set that was not found in the identity file: " << headIdString << std::endl;
+         fail = true;
+      }
 
-        headCooccurrence[relation2id[relationIdString]][entity2id[headIdString]]++;
-        tailCooccurrence[relation2id[relationIdString]][entity2id[tailIdString]]++;
+      if (entity2id.count(tailIdString) == 0) {
+         std::cout << "Tail entity found in training set that was not found in the identity file: " << tailIdString << std::endl;
+         fail = true;
+      }
 
-        add(entity2id[headIdString], entity2id[tailIdString], relation2id[relationIdString]);
-    }
-    fclose(trainFile);
+      if (relation2id.count(relationIdString) == 0) {
+         std::cout << "Relation found in training set that was not found in the identity file: " << relationIdString << std::endl;
+         fail = true;
+      }
 
-    for (int i = 0; i < relation2id.size(); i++) {
-        // Sum the number of times this relation (i) appears.
-        double totalHeadRelationCooccurrences = 0;
-        for (std::map<int, int>::iterator it = headCooccurrence[i].begin(); it != headCooccurrence[i].end(); it++) {
-            totalHeadRelationCooccurrences += it->second;
-        }
+      if (fail) {
+         continue;
+      }
 
-        if (headCooccurrence[i].size() == 0) {
-            relationHeadMeanCooccurrence_[i] = 0;
-        } else {
-            relationHeadMeanCooccurrence_[i] = totalHeadRelationCooccurrences / headCooccurrence[i].size();
-        }
+      headCooccurrence[relation2id[relationIdString]][entity2id[headIdString]]++;
+      tailCooccurrence[relation2id[relationIdString]][entity2id[tailIdString]]++;
 
-        double totalTailRelationCooccurrences = 0;
-        for (std::map<int, int>::iterator it = tailCooccurrence[i].begin(); it != tailCooccurrence[i].end(); it++) {
-            totalTailRelationCooccurrences += it->second;
-        }
+      add(entity2id[headIdString], entity2id[tailIdString], relation2id[relationIdString]);
+   }
+   fclose(trainFile);
 
-        if (tailCooccurrence[i].size() == 0) {
-            relationTailMeanCooccurrence_[i] = 0;
-        } else {
-            relationTailMeanCooccurrence_[i] = totalTailRelationCooccurrences / tailCooccurrence[i].size();
-        }
-    }
+   for (int i = 0; i < relation2id.size(); i++) {
+      // Sum the number of times this relation (i) appears.
+      double totalHeadRelationCooccurrences = 0;
+      for (std::map<int, int>::iterator it = headCooccurrence[i].begin(); it != headCooccurrence[i].end(); it++) {
+         totalHeadRelationCooccurrences += it->second;
+      }
 
-    numRelations_ = relation2id.size();
-    numEntities_ = entity2id.size();
+      if (headCooccurrence[i].size() == 0) {
+         relationHeadMeanCooccurrence_[i] = 0;
+      } else {
+         relationHeadMeanCooccurrence_[i] = totalHeadRelationCooccurrences / headCooccurrence[i].size();
+      }
 
-    std::cout << "Number of Relations: " << relation2id.size() << std::endl;
-    std::cout << "Number of Entities: " << entity2id.size() << std::endl;
+      double totalTailRelationCooccurrences = 0;
+      for (std::map<int, int>::iterator it = tailCooccurrence[i].begin(); it != tailCooccurrence[i].end(); it++) {
+         totalTailRelationCooccurrences += it->second;
+      }
+
+      if (tailCooccurrence[i].size() == 0) {
+         relationTailMeanCooccurrence_[i] = 0;
+      } else {
+         relationTailMeanCooccurrence_[i] = totalTailRelationCooccurrences / tailCooccurrence[i].size();
+      }
+   }
+
+   numRelations_ = relation2id.size();
+   numEntities_ = entity2id.size();
+
+   std::cout << "Number of Relations: " << relation2id.size() << std::endl;
+   std::cout << "Number of Entities: " << entity2id.size() << std::endl;
 }
 
 }  // namespace common

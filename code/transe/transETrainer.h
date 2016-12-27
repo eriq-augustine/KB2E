@@ -8,20 +8,22 @@
 namespace transe {
 
 class TransETrainer : public common::Trainer {
-    public:
-        explicit TransETrainer(int embeddingSize,  double learningRate, double margin, int method)
-                : common::Trainer(embeddingSize, learningRate, margin, method) {}
+   public:
+      explicit TransETrainer(int embeddingSize,  double learningRate, double margin,
+                             int method, int numBatches, int maxEpochs, int distanceType);
 
-    protected:
-        // The next values for the embeddings.
-        std::vector<std::vector<double>> relation_vec_next_;
-        std::vector<std::vector<double>> entity_vec_next_;
+   protected:
+      // The next values for the embeddings.
+      std::vector<std::vector<double>> relation_vec_next_;
+      std::vector<std::vector<double>> entity_vec_next_;
 
-        double initialEmbeddingValue() override;
-        void gradientUpdate(int head, int tail, int relation, bool corrupted) override;
-        void postbatch() override;
-        void prebatch() override;
-        double tripleEnergy(int head, int tail, int relation) override;
+      int distanceType_;
+
+      double initialEmbeddingValue() override;
+      void gradientUpdate(int head, int tail, int relation, bool corrupted) override;
+      void postbatch() override;
+      void prebatch() override;
+      double tripleEnergy(int head, int tail, int relation) override;
 };
 
 }  // namespace transe
