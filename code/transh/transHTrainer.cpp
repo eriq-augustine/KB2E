@@ -1,4 +1,4 @@
-#include "TransH/transHTrainer.h"
+#include "transh/transHTrainer.h"
 
 #include <iostream>
 #include <cstring>

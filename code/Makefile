@@ -34,13 +34,13 @@ mains: binDir trainTransE trainTransH testTransE
 binDir:
 	mkdir -p $(BIN_DIR)
 
-trainTransE: TransE/Train_TransE.o common
+trainTransE: transe/trainTransE.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
-trainTransH: TransH/Train_TransH.o common
+trainTransH: transh/trainTransH.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
-testTransE: TransE/Test_TransE.o common
+testTransE: transe/testTransE.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
 %.o: %.cpp

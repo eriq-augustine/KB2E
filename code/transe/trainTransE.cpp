@@ -8,7 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "TransE/transETrainer.h"
+#include "transe/transETrainer.h"
 #include "common/trainer.h"
 #include "common/utils.h"
 
