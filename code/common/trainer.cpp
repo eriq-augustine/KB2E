@@ -2,13 +2,9 @@
 
 #include <iostream>
 #include <cstring>
-#include <cstdio>
 #include <map>
 #include <vector>
 #include <string>
-#include <ctime>
-#include <cmath>
-#include <cstdlib>
 
 #include "common/utils.h"
 

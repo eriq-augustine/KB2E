@@ -1,17 +1,10 @@
 #ifndef COMMON_TRAINER_H_
 #define COMMON_TRAINER_H_
 
-#include <iostream>
-#include <cstring>
-#include <cstdio>
 #include <map>
 #include <vector>
 #include <string>
-#include <ctime>
-#include <cmath>
-#include <cstdlib>
-
-#include "common/utils.h"
+#include <utility>
 
 namespace common {
 

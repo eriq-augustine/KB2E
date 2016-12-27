@@ -1,12 +1,5 @@
 #include <iostream>
-#include <cstring>
-#include <cstdio>
-#include <map>
-#include <vector>
 #include <string>
-#include <ctime>
-#include <cmath>
-#include <cstdlib>
 
 #include "transe/transETrainer.h"
 #include "common/trainer.h"

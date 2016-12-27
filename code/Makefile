@@ -7,6 +7,7 @@ ARCHIVE_FLAGS=-rcs
 BIN_DIR=bin
 
 CPP_FILES = $(shell find . -name *.cpp)
+HEADER_FILES = $(shell find . -name *.h)
 OBJ_FILES = $(CPP_FILES:%.cpp=%.o)
 
 # All files without a main.
@@ -22,7 +23,7 @@ all: objects common mains
 # $(info CFLAGS is $(CFLAGS))
 
 # All bject files
-objects: $(OBJ_FILES)
+objects: $(OBJ_FILES) $(HEADER_FILES)
 
 # The common code that we will put in an archive.
 common: objects binDir
@@ -43,7 +44,9 @@ trainTransH: transh/trainTransH.o common
 testTransE: transe/testTransE.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
-%.o: %.cpp
+# Just include the headers so we will rebuild if they change.
+#  We could really scope it down more, but the project is small.
+%.o: %.cpp $(HEADER_FILES)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

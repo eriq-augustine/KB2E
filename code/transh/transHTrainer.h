@@ -1,18 +1,9 @@
 #ifndef TRANSH_TRANSHTRAINER_H_
 #define TRANSH_TRANSHTRAINER_H_
 
-#include <iostream>
-#include <cstring>
-#include <cstdio>
-#include <map>
 #include <vector>
-#include <string>
-#include <ctime>
-#include <cmath>
-#include <cstdlib>
 
 #include "common/trainer.h"
-#include "common/utils.h"
 
 namespace transh {
 
