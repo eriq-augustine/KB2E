@@ -4,14 +4,13 @@
 #include <vector>
 
 #include "common/trainer.h"
+#include "common/utils.h"
 
 namespace transe {
 
 class TransETrainer : public common::Trainer {
    public:
-      explicit TransETrainer(std::string dataDir, std::string outputDir,
-                             int embeddingSize, double learningRate, double margin,
-                             int method, int numBatches, int maxEpochs, int distanceType);
+      explicit TransETrainer(common::TrainerArguments args);
 
    protected:
       // The next values for the embeddings.

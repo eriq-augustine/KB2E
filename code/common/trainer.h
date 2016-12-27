@@ -6,6 +6,8 @@
 #include <string>
 #include <utility>
 
+#include "common/utils.h"
+
 namespace common {
 
 class Trainer {
@@ -13,9 +15,7 @@ class Trainer {
       std::string dataDir_;
       std::string outputDir_;
 
-      explicit Trainer(std::string dataDir, std::string outputDir,
-                       int embeddingSize, double learningRate, double margin,
-                       int method, int numBatches, int maxEpochs);
+      explicit Trainer(TrainerArguments args);
 
       void add(int head, int tail, int relation);
       void loadFiles();

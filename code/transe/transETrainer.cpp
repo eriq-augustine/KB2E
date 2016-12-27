@@ -11,12 +11,9 @@
 
 namespace transe {
 
-TransETrainer::TransETrainer(std::string dataDir, std::string outputDir,
-                             int embeddingSize, double learningRate, double margin,
-                             int method, int numBatches, int maxEpochs, int distanceType)
-      : common::Trainer(dataDir, outputDir, embeddingSize, learningRate, margin, method, numBatches, maxEpochs),
-        distanceType_(distanceType) {
-   distanceType_ = (distanceType_ == L1_DISTANCE || distanceType_ == L2_DISTANCE) ? distanceType_ : DEFAULT_DISTANCE;
+TransETrainer::TransETrainer(common::TrainerArguments args)
+      : common::Trainer(args) {
+   distanceType_ = args.distanceType;
 }
 
 double TransETrainer::initialEmbeddingValue() {

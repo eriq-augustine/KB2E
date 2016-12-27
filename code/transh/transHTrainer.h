@@ -4,16 +4,13 @@
 #include <vector>
 
 #include "common/trainer.h"
+#include "common/utils.h"
 
 namespace transh {
 
 class TransHTrainer : public common::Trainer {
    public:
-      explicit TransHTrainer(std::string dataDir, std::string outputDir,
-                             int embeddingSize, double learningRate, double margin,
-                             int method, int numBatches, int maxEpochs)
-            : common::Trainer(dataDir, outputDir, embeddingSize, learningRate, margin, method, numBatches, maxEpochs) {}
-
+      explicit TransHTrainer(common::TrainerArguments args) : common::Trainer(args) {}
       void write() override;
 
    protected:

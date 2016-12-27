@@ -11,20 +11,15 @@
 
 namespace common {
 
-Trainer::Trainer(std::string dataDir, std::string outputDir,
-                 int embeddingSize, double learningRate, double margin,
-                 int method, int numBatches, int maxEpochs)
-      : dataDir_(dataDir), outputDir_(outputDir),
-        embeddingSize_(embeddingSize), learningRate_(learningRate), margin_(margin),
-        method_(method), numBatches_(numBatches), maxEpochs_(maxEpochs) {
-   dataDir_ = dataDir_.empty() ? DEFAULT_DATA_DIR : dataDir_;
-   outputDir_ = outputDir_.empty() ? DEFAULT_OUTPUT_DIR : outputDir_;
-   embeddingSize_ = embeddingSize_ > 0 ? embeddingSize_ : DEFAULT_EMBEDDING_SIZE;
-   learningRate_ = learningRate_ > 0 ? learningRate_ : DEFAULT_LEARNING_RATE;
-   margin_ = margin_ > 0 ? margin_ : DEFAULT_MARGIN;
-   method_ = (method_ == METHOD_BERN || method_ == METHOD_UNIF) ? method_ : DEFAULT_METHOD;
-   numBatches_ = numBatches_ > 0 ? numBatches_ : DEFAULT_NUM_BATCHES;
-   maxEpochs_ = maxEpochs_ > 0 ? maxEpochs_ : DEFAULT_MAX_EPOCHS;
+Trainer::Trainer(TrainerArguments args) {
+   dataDir_ = args.dataDir;
+   outputDir_ = args.outputDir;
+   embeddingSize_ = args.embeddingSize;
+   learningRate_ = args.learningRate;
+   margin_ = args.margin;
+   method_ = args.method;
+   numBatches_ = args.numBatches;
+   maxEpochs_ = args.maxEpochs;
 }
 
 void Trainer::add(int head, int tail, int relation) {

@@ -14,7 +14,6 @@
 #define L1_DISTANCE 0
 #define L2_DISTANCE 1
 
-
 #define ENTITY_ID_FILE "entity2id.txt"
 #define RELATION_ID_FILE "relation2id.txt"
 #define TRAIN_FILE "train.txt"
@@ -31,5 +30,16 @@
 
 #define DEFAULT_DATA_DIR "../data"
 #define DEFAULT_OUTPUT_DIR "."
+
+#define ARG_HELP "help"
+#define ARG_DATA_DIR "datadir"
+#define ARG_OUT_DIR "outdir"
+#define ARG_EMBEDDING_SIZE "size"
+#define ARG_LEARNING_RATE "rate"
+#define ARG_MARGIN "margin"
+#define ARG_METHOD "method"
+#define ARG_NUM_BATCHES "batches"
+#define ARG_MAX_EPOCHS "epochs"
+#define ARG_DISTANCE_TYPE "distance"
 
 #endif  // COMMON_CONSTANTS_H_
