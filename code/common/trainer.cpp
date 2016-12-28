@@ -32,28 +32,28 @@ void Trainer::add(int head, int tail, int relation) {
 }
 
 void Trainer::prepTrain() {
-   relation_vec_.resize(numRelations_);
-   for (int i = 0; i <relation_vec_.size(); i++) {
-      relation_vec_[i].resize(embeddingSize_);
+   relationVec_.resize(numRelations_);
+   for (int i = 0; i <relationVec_.size(); i++) {
+      relationVec_[i].resize(embeddingSize_);
    }
 
-   entity_vec_.resize(numEntities_);
-   for (int i = 0; i <entity_vec_.size(); i++) {
-      entity_vec_[i].resize(embeddingSize_);
+   entityVec_.resize(numEntities_);
+   for (int i = 0; i <entityVec_.size(); i++) {
+      entityVec_[i].resize(embeddingSize_);
    }
 
    for (int i = 0; i < numRelations_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
-         relation_vec_[i][j] = initialEmbeddingValue();
+         relationVec_[i][j] = initialEmbeddingValue();
       }
-      norm(relation_vec_[i]);
+      norm(relationVec_[i]);
    }
 
    for (int i = 0; i < numEntities_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
-         entity_vec_[i][j] = initialEmbeddingValue();
+         entityVec_[i][j] = initialEmbeddingValue();
       }
-      norm(entity_vec_[i]);
+      norm(entityVec_[i]);
    }
 }
 
@@ -112,19 +112,19 @@ void Trainer::bfgs() {
 }
 
 void Trainer::write() {
-   FILE* relationOutFile = fopen((outputDir_ + "/" + RELATION_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
+   FILE* relationOutFile = fopen((outputDir_ + "/" + RELATION_EMBEDDING_FILE_BASENAME + "." + methodName()).c_str(), "w");
    for (int i = 0; i < numRelations_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
-         fprintf(relationOutFile, "%.6lf\t", relation_vec_[i][j]);
+         fprintf(relationOutFile, "%.6lf\t", relationVec_[i][j]);
       }
       fprintf(relationOutFile, "\n");
    }
    fclose(relationOutFile);
 
-   FILE* entityOutFile = fopen((outputDir_ + "/" + ENTITY_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
+   FILE* entityOutFile = fopen((outputDir_ + "/" + ENTITY_EMBEDDING_FILE_BASENAME + "." + methodName()).c_str(), "w");
    for (int i = 0; i < numEntities_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
-         fprintf(entityOutFile, "%.6lf\t", entity_vec_[i][j]);
+         fprintf(entityOutFile, "%.6lf\t", entityVec_[i][j]);
       }
       fprintf(entityOutFile, "\n");
    }

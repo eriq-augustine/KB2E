@@ -29,28 +29,29 @@ class Trainer {
       double learningRate_;
       double margin_;
 
-      std::vector<std::vector<double>> relation_vec_;
-      std::vector<std::vector<double>> entity_vec_;
+      int numBatches_;
+      int maxEpochs_;
+
+      std::vector<std::vector<double>> relationVec_;
+      std::vector<std::vector<double>> entityVec_;
 
       int numRelations_;
       int numEntities_;
 
-      int numBatches_;
-      int maxEpochs_;
+      // The triples we are working with separated out into three vectors.
+      std::vector<int> heads_;
+      std::vector<int> tails_;
+      std::vector<int> relations_;
+
+      // All the triples we know are good.
+      // {<head, relation>: {tail: 1}}
+      std::map<std::pair<int, int>, std::map<int, int> > triples_;
 
       // <relation, frequency>
       // The mean co-occurance count of this relation with entities that appear in the head.
       std::map<int,double> relationHeadMeanCooccurrence_;
       // The mean co-occurance count of this relation with entities that appear in the tail.
       std::map<int,double> relationTailMeanCooccurrence_;
-
-      // The triples separated out into three vectors.
-      std::vector<int> heads_;
-      std::vector<int> tails_;
-      std::vector<int> relations_;
-
-      // {<head, relation>: {tail: 1}}
-      std::map<std::pair<int, int>, std::map<int, int> > triples_;
 
       //
 

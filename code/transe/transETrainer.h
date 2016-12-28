@@ -14,8 +14,8 @@ class TransETrainer : public common::Trainer {
 
    protected:
       // The next values for the embeddings.
-      std::vector<std::vector<double>> relation_vec_next_;
-      std::vector<std::vector<double>> entity_vec_next_;
+      std::vector<std::vector<double>> relationVec_next_;
+      std::vector<std::vector<double>> entityVec_next_;
 
       int distanceType_;
 

@@ -13,8 +13,9 @@ class EmbeddingTest {
       void run();
 
    private:
-      // TODO
+      // TODO TEST
       int embeddingSize_ = 100;
+      std::string outputDir_ = ".";
 
       std::vector<std::vector<double>> relationVec_;
       std::vector<std::vector<double>> entityVec_;
@@ -34,6 +35,10 @@ class EmbeddingTest {
       void add(int head, int tail, int relation, bool addToWorkingSet);
 
       double tripleEnergy(int head, int tail, int relation);
+      void loadEmbeddings();
+      void evalCorruption(int head, int tail, int relation, bool corruptHead,
+                          int* rawSumActualRank, int* filteredSumActualRank,
+                          int* rawHitsIn10, int* filteredHitsIn10);
 };
 
 }  // namespace transe

@@ -15,12 +15,12 @@ void TransHTrainer::gradientUpdate(int head, int tail, int relation, bool corrup
     double sum_x = 0;
 
     for (int i = 0; i < embeddingSize_; i++) {
-        headSum += weights_[relation][i] * entity_vec_[head][i];
-        tailSum += weights_[relation][i] * entity_vec_[tail][i];
+        headSum += weights_[relation][i] * entityVec_[head][i];
+        tailSum += weights_[relation][i] * entityVec_[tail][i];
     }
 
     for (int i = 0; i < embeddingSize_; i++) {
-        double x = 2 * (entity_vec_[tail][i] - tailSum * weights_[relation][i] - (entity_vec_[head][i] - headSum * weights_[relation][i]) - relation_vec_[relation][i]);
+        double x = 2 * (entityVec_[tail][i] - tailSum * weights_[relation][i] - (entityVec_[head][i] - headSum * weights_[relation][i]) - relationVec_[relation][i]);
 
         //for L1 distance function
         if (x > 0) {
@@ -30,31 +30,31 @@ void TransHTrainer::gradientUpdate(int head, int tail, int relation, bool corrup
         }
 
         sum_x += x * weights_[relation][i];
-        relation_vec_next_[relation][i] -= beta * learningRate_ * x;
+        relationVec_next_[relation][i] -= beta * learningRate_ * x;
 
-        entity_vec_next_[head][i] -= beta * learningRate_ * x;
-        entity_vec_next_[tail][i] += beta * learningRate_ * x;
+        entityVec_next_[head][i] -= beta * learningRate_ * x;
+        entityVec_next_[tail][i] += beta * learningRate_ * x;
 
         weights_next_[relation][i] += beta * learningRate_ * x * headSum;
         weights_next_[relation][i] -= beta * learningRate_ * x * tailSum;
     }
 
     for (int i = 0; i < embeddingSize_; i++) {
-        weights_next_[relation][i] += beta * learningRate_ * sum_x * entity_vec_[head][i];
-        weights_next_[relation][i] -= beta * learningRate_ * sum_x * entity_vec_[tail][i];
+        weights_next_[relation][i] += beta * learningRate_ * sum_x * entityVec_[head][i];
+        weights_next_[relation][i] -= beta * learningRate_ * sum_x * entityVec_[tail][i];
     }
 
-    common::norm(relation_vec_next_[relation]);
-    common::norm(entity_vec_next_[head]);
-    common::norm(entity_vec_next_[tail]);
+    common::norm(relationVec_next_[relation]);
+    common::norm(entityVec_next_[head]);
+    common::norm(entityVec_next_[tail]);
 
     common::norm(weights_next_[relation], false);
     // TODO(eriq): By normalizing against the weights here, are we missing a normalization with
     //  for the non-corrupted tupples against the updated weights? (updated during the corruption
     //  gradient update).
-    common::norm(relation_vec_next_[relation], weights_next_[relation], learningRate_);
-    common::norm(entity_vec_next_[head], weights_next_[relation], learningRate_);
-    common::norm(entity_vec_next_[tail], weights_next_[relation], learningRate_);
+    common::norm(relationVec_next_[relation], weights_next_[relation], learningRate_);
+    common::norm(entityVec_next_[head], weights_next_[relation], learningRate_);
+    common::norm(entityVec_next_[tail], weights_next_[relation], learningRate_);
 }
 
 double TransHTrainer::initialEmbeddingValue() {
@@ -62,14 +62,14 @@ double TransHTrainer::initialEmbeddingValue() {
 }
 
 void TransHTrainer::postbatch() {
-    relation_vec_ = relation_vec_next_;
-    entity_vec_ = entity_vec_next_;
+    relationVec_ = relationVec_next_;
+    entityVec_ = entityVec_next_;
     weights_ = weights_next_;
 }
 
 void TransHTrainer::prebatch() {
-    relation_vec_next_ = relation_vec_;
-    entity_vec_next_ = entity_vec_;
+    relationVec_next_ = relationVec_;
+    entityVec_next_ = entityVec_;
     weights_next_ = weights_;
 }
 
@@ -91,13 +91,13 @@ double TransHTrainer::tripleEnergy(int head, int tail, int relation) {
     double tailSum = 0;
 
     for (int i = 0; i < embeddingSize_; i++) {
-        headSum += weights_[relation][i] * entity_vec_[head][i];
-        tailSum += weights_[relation][i] * entity_vec_[tail][i];
+        headSum += weights_[relation][i] * entityVec_[head][i];
+        tailSum += weights_[relation][i] * entityVec_[tail][i];
     }
 
     double energy = 0;
     for (int i = 0; i < embeddingSize_; i++) {
-        energy += std::fabs(entity_vec_[tail][i] - tailSum * weights_[relation][i] - (entity_vec_[head][i] - headSum * weights_[relation][i]) - relation_vec_[relation][i]);
+        energy += std::fabs(entityVec_[tail][i] - tailSum * weights_[relation][i] - (entityVec_[head][i] - headSum * weights_[relation][i]) - relationVec_[relation][i]);
     }
 
     return energy;
@@ -106,7 +106,7 @@ double TransHTrainer::tripleEnergy(int head, int tail, int relation) {
 void TransHTrainer::write() {
     Trainer::write();
 
-    FILE* weightOutFile = fopen((outputDir_ + "/" + WEIGHT_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
+    FILE* weightOutFile = fopen((outputDir_ + "/" + WEIGHT_EMBEDDING_FILE_BASENAME + "." + methodName()).c_str(), "w");
     for (int i = 0; i < numRelations_; i++) {
         for (int j=0; j < embeddingSize_; j++) {
             fprintf(weightOutFile, "%.6lf\t", weights_[i][j]);

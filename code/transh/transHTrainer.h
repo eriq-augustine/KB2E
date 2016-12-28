@@ -17,8 +17,8 @@ class TransHTrainer : public common::Trainer {
       std::vector<std::vector<double>> weights_;
 
       // The next values for the embeddings.
-      std::vector<std::vector<double>> relation_vec_next_;
-      std::vector<std::vector<double>> entity_vec_next_;
+      std::vector<std::vector<double>> relationVec_next_;
+      std::vector<std::vector<double>> entityVec_next_;
       std::vector<std::vector<double>> weights_next_;
 
       void gradientUpdate(int head, int tail, int relation, bool corrupted) override;

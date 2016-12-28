@@ -19,9 +19,9 @@
 #define ENTITY_ID_FILE "entity2id.txt"
 #define RELATION_ID_FILE "relation2id.txt"
 #define TRAIN_FILE "train.txt"
-#define ENTITY_OUT_FILE_BASENAME "entity2vec"
-#define RELATION_OUT_FILE_BASENAME "relation2vec"
-#define WEIGHT_OUT_FILE_BASENAME "weights"
+#define ENTITY_EMBEDDING_FILE_BASENAME "entity2vec"
+#define RELATION_EMBEDDING_FILE_BASENAME "relation2vec"
+#define WEIGHT_EMBEDDING_FILE_BASENAME "weights"
 
 #define DEFAULT_EMBEDDING_SIZE 100
 #define DEFAULT_LEARNING_RATE 0.001

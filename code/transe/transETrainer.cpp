@@ -25,7 +25,7 @@ void TransETrainer::gradientUpdate(int head, int tail, int relation, bool corrup
    double modifier = corrupted ? 1.0 : -1.0;
 
    for (int i = 0; i < embeddingSize_; i++) {
-         double x = 2.0 * (entity_vec_[tail][i] - entity_vec_[head][i] - relation_vec_[relation][i]);
+         double x = 2.0 * (entityVec_[tail][i] - entityVec_[head][i] - relationVec_[relation][i]);
          if (distanceType_ == L1_DISTANCE) {
             if (x > 0) {
                x = 1;
@@ -34,28 +34,28 @@ void TransETrainer::gradientUpdate(int head, int tail, int relation, bool corrup
             }
          }
 
-         relation_vec_next_[relation][i] -= modifier * learningRate_ * x;
-         entity_vec_next_[head][i] -= modifier * learningRate_ * x;
-         entity_vec_next_[tail][i] += modifier * learningRate_ * x;
+         relationVec_next_[relation][i] -= modifier * learningRate_ * x;
+         entityVec_next_[head][i] -= modifier * learningRate_ * x;
+         entityVec_next_[tail][i] += modifier * learningRate_ * x;
    }
 
-   common::norm(relation_vec_next_[relation]);
-   common::norm(entity_vec_next_[head]);
-   common::norm(entity_vec_next_[tail]);
+   common::norm(relationVec_next_[relation]);
+   common::norm(entityVec_next_[head]);
+   common::norm(entityVec_next_[tail]);
 }
 
 void TransETrainer::postbatch() {
-   relation_vec_ = relation_vec_next_;
-   entity_vec_ = entity_vec_next_;
+   relationVec_ = relationVec_next_;
+   entityVec_ = entityVec_next_;
 }
 
 void TransETrainer::prebatch() {
-   relation_vec_next_ = relation_vec_;
-   entity_vec_next_ = entity_vec_;
+   relationVec_next_ = relationVec_;
+   entityVec_next_ = entityVec_;
 }
 
 double TransETrainer::tripleEnergy(int head, int tail, int relation) {
-   return transe::tripleEnergy(head, tail, relation, embeddingSize_, entity_vec_, relation_vec_, (distanceType_ == L1_DISTANCE));
+   return transe::tripleEnergy(head, tail, relation, embeddingSize_, entityVec_, relationVec_, (distanceType_ == L1_DISTANCE));
 }
 
 }  // namespace transe
