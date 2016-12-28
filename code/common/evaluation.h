@@ -1,29 +1,34 @@
-#ifndef TRANSE_TESTTRANSE_H_
-#define TRANSE_TESTTRANSE_H_
+#ifndef COMMON_EVALUATION_H_
+#define COMMON_EVALUATION_H_
 
 #include <map>
 #include <vector>
 
-namespace transe {
+#include "common/utils.h"
 
-class EmbeddingTest {
+namespace common {
+
+class EmbeddingEvaluation {
    public:
-      explicit EmbeddingTest(int method) : method_(method) {}
+      explicit EmbeddingEvaluation(EmbeddingArguments args);
+
       void prepare();
       void run();
 
-   private:
-      // TODO TEST
-      int embeddingSize_ = 100;
-      std::string outputDir_ = ".";
+   protected:
+      int embeddingSize_;
+      std::string dataDir_;
+      std::string outputDir_;
+      int method_;
+
+      std::string relationEmbeddingPath_;
+      std::string entityEmbeddingPath_;
 
       std::vector<std::vector<double>> relationVec_;
       std::vector<std::vector<double>> entityVec_;
 
       int numRelations_;
       int numEntities_;
-
-      int method_;
 
       std::vector<int> heads_;
       std::vector<int> tails_;
@@ -33,14 +38,16 @@ class EmbeddingTest {
       std::map<std::pair<int, int>, std::map<int, int>> triples_;
 
       void add(int head, int tail, int relation, bool addToWorkingSet);
-
-      double tripleEnergy(int head, int tail, int relation);
-      void loadEmbeddings();
       void evalCorruption(int head, int tail, int relation, bool corruptHead,
                           int* rawSumActualRank, int* filteredSumActualRank,
                           int* rawHitsIn10, int* filteredHitsIn10);
+
+      void loadTriples();
+
+      virtual double tripleEnergy(int head, int tail, int relation) = 0;
+      virtual void loadEmbeddings();
 };
 
-}  // namespace transe
+}  // namespace common
 
-#endif  // TRANSE_TESTTRANSE_H_
+#endif  // COMMON_EVALUATION_H_

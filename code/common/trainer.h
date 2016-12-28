@@ -15,7 +15,7 @@ class Trainer {
       std::string dataDir_;
       std::string outputDir_;
 
-      explicit Trainer(TrainerArguments args);
+      explicit Trainer(EmbeddingArguments args);
 
       void add(int head, int tail, int relation);
       void loadFiles();

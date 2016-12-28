@@ -19,6 +19,8 @@
 #define ENTITY_ID_FILE "entity2id.txt"
 #define RELATION_ID_FILE "relation2id.txt"
 #define TRAIN_FILE "train.txt"
+#define TEST_FILE "test.txt"
+#define VALID_FILE "valid.txt"
 #define ENTITY_EMBEDDING_FILE_BASENAME "entity2vec"
 #define RELATION_EMBEDDING_FILE_BASENAME "relation2vec"
 #define WEIGHT_EMBEDDING_FILE_BASENAME "weights"
@@ -44,5 +46,6 @@
 #define ARG_NUM_BATCHES "batches"
 #define ARG_MAX_EPOCHS "epochs"
 #define ARG_DISTANCE_TYPE "distance"
+#define ARG_SEED "seed"
 
 #endif  // COMMON_CONSTANTS_H_

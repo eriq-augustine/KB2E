@@ -1,10 +1,13 @@
 #include "common/utils.h"
 
+#include <sys/stat.h>
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <string>
 
 #include "common/constants.h"
@@ -116,7 +119,7 @@ int randMax(int x) {
    return res;
 }
 
-TrainerArguments::TrainerArguments() {
+EmbeddingArguments::EmbeddingArguments() {
    dataDir = DEFAULT_DATA_DIR;
    outputDir = DEFAULT_OUTPUT_DIR;
    embeddingSize = DEFAULT_EMBEDDING_SIZE;
@@ -126,9 +129,10 @@ TrainerArguments::TrainerArguments() {
    numBatches = DEFAULT_NUM_BATCHES;
    maxEpochs = DEFAULT_MAX_EPOCHS;
    distanceType = DEFAULT_DISTANCE;
+   seed = (unsigned int)time(NULL);
 }
 
-std::string TrainerArguments::to_string() {
+std::string EmbeddingArguments::to_string() {
    std::string rtn;
 
    rtn += "Options: [";
@@ -140,19 +144,20 @@ std::string TrainerArguments::to_string() {
    rtn += std::string(ARG_METHOD) + ": " + METHOD_TO_STRING(method) + ", ";
    rtn += std::string(ARG_NUM_BATCHES) + ": " + std::to_string(numBatches) + ", ";
    rtn += std::string(ARG_MAX_EPOCHS) + ": " + std::to_string(maxEpochs) + ", ";
-   rtn += std::string(ARG_DISTANCE_TYPE) + ": " + std::to_string(distanceType) + "]";
+   rtn += std::string(ARG_DISTANCE_TYPE) + ": " + std::to_string(distanceType) + ", ";
+   rtn += std::string(ARG_SEED) + ": " + std::to_string(seed) + "]";
 
    return rtn;
 }
 
-TrainerArguments parseArgs(int argc, char** argv) {
+EmbeddingArguments parseArgs(int argc, char** argv) {
    int index = argpos((char*)ARG_HELP, false, argc, argv);
    if (index != -1) {
       printUsage((char*)argv[0]);
       exit(0);
    }
 
-   TrainerArguments parsedArgs;
+   EmbeddingArguments parsedArgs;
    index = argpos((char*)ARG_DATA_DIR, true, argc, argv);
    if (index != -1) {
       parsedArgs.dataDir = argv[index + 1];
@@ -198,6 +203,11 @@ TrainerArguments parseArgs(int argc, char** argv) {
       parsedArgs.distanceType = atoi(argv[index + 1]);
    }
 
+   index = argpos((char*)ARG_SEED, true, argc, argv);
+   if (index != -1) {
+      parsedArgs.seed = atoi(argv[index + 1]);
+   }
+
    return parsedArgs;
 }
 
@@ -216,6 +226,12 @@ void printUsage(char* invokedFile) {
    printf("   --%s [%d]\n", ARG_NUM_BATCHES, DEFAULT_NUM_BATCHES);
    printf("   --%s [%d]\n", ARG_MAX_EPOCHS, DEFAULT_MAX_EPOCHS);
    printf("   --%s [%d]\n", ARG_DISTANCE_TYPE, DEFAULT_DISTANCE);
+   printf("   --%s [now]\n", ARG_SEED);
+}
+
+bool fileExists(std::string& path) {
+   struct stat buff;   
+   return (stat(path.c_str(), &buff) == 0); 
 }
 
 }   // namespace common

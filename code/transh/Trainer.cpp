@@ -1,4 +1,4 @@
-#include "transh/transHTrainer.h"
+#include "transh/trainer.h"
 
 #include <cmath>
 
@@ -7,7 +7,7 @@
 
 namespace transh {
 
-void TransHTrainer::gradientUpdate(int head, int tail, int relation, bool corrupted) {
+void Trainer::gradientUpdate(int head, int tail, int relation, bool corrupted) {
     double beta = corrupted ? 1 : -1;
 
     double headSum = 0;
@@ -57,23 +57,23 @@ void TransHTrainer::gradientUpdate(int head, int tail, int relation, bool corrup
     common::norm(entityVec_next_[tail], weights_next_[relation], learningRate_);
 }
 
-double TransHTrainer::initialEmbeddingValue() {
+double Trainer::initialEmbeddingValue() {
     return common::randn(0, 1.0 / embeddingSize_, -1, 1);
 }
 
-void TransHTrainer::postbatch() {
+void Trainer::postbatch() {
     relationVec_ = relationVec_next_;
     entityVec_ = entityVec_next_;
     weights_ = weights_next_;
 }
 
-void TransHTrainer::prebatch() {
+void Trainer::prebatch() {
     relationVec_next_ = relationVec_;
     entityVec_next_ = entityVec_;
     weights_next_ = weights_;
 }
 
-void TransHTrainer::prepTrain() {
+void Trainer::prepTrain() {
     Trainer::prepTrain();
 
     weights_.resize(numRelations_);
@@ -86,7 +86,7 @@ void TransHTrainer::prepTrain() {
     }
 }
 
-double TransHTrainer::tripleEnergy(int head, int tail, int relation) {
+double Trainer::tripleEnergy(int head, int tail, int relation) {
     double headSum = 0;
     double tailSum = 0;
 
@@ -103,7 +103,7 @@ double TransHTrainer::tripleEnergy(int head, int tail, int relation) {
     return energy;
 }
 
-void TransHTrainer::write() {
+void Trainer::write() {
     Trainer::write();
 
     FILE* weightOutFile = fopen((outputDir_ + "/" + WEIGHT_EMBEDDING_FILE_BASENAME + "." + methodName()).c_str(), "w");

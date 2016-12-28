@@ -35,13 +35,13 @@ mains: binDir trainTransE trainTransH testTransE
 binDir:
 	mkdir -p $(BIN_DIR)
 
-trainTransE: transe/trainTransE.o common
+trainTransE: transe/bin/trainTransE.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
-trainTransH: transh/trainTransH.o common
+trainTransH: transh/bin/trainTransH.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
-testTransE: transe/testTransE.o common
+testTransE: transe/bin/testTransE.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
 # Just include the headers so we will rebuild if they change.

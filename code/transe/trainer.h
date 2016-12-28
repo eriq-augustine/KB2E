@@ -1,5 +1,5 @@
-#ifndef TRANSE_TRANSETRAINER_H_
-#define TRANSE_TRANSETRAINER_H_
+#ifndef TRANSE_TRAINER_H_
+#define TRANSE_TRAINER_H_
 
 #include <vector>
 
@@ -8,9 +8,9 @@
 
 namespace transe {
 
-class TransETrainer : public common::Trainer {
+class Trainer : public common::Trainer {
    public:
-      explicit TransETrainer(common::TrainerArguments args);
+      explicit Trainer(common::EmbeddingArguments args);
 
    protected:
       // The next values for the embeddings.
@@ -28,4 +28,4 @@ class TransETrainer : public common::Trainer {
 
 }  // namespace transe
 
-#endif  // TRANSE_TRANSETRAINER_H_
+#endif  // TRANSE_TRAINER_H_

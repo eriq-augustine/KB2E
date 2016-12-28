@@ -1,5 +1,5 @@
-#ifndef TRANSH_TRANSHTRAINER_H_
-#define TRANSH_TRANSHTRAINER_H_
+#ifndef TRANSH_TRAINER_H_
+#define TRANSH_TRAINER_H_
 
 #include <vector>
 
@@ -8,9 +8,9 @@
 
 namespace transh {
 
-class TransHTrainer : public common::Trainer {
+class Trainer : public common::Trainer {
    public:
-      explicit TransHTrainer(common::TrainerArguments args) : common::Trainer(args) {}
+      explicit Trainer(common::EmbeddingArguments args) : common::Trainer(args) {}
       void write() override;
 
    protected:
@@ -31,4 +31,4 @@ class TransHTrainer : public common::Trainer {
 
 }  // namespace transh
 
-#endif  // TRANSH_TRANSHTRAINER_H_
+#endif  // TRANSH_TRAINER_H_

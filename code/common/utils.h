@@ -19,7 +19,9 @@ void norm(std::vector<double> &a, bool ignoreShort = true);
 void norm(std::vector<double> &a, std::vector<double> &b, double rate);
 int randMax(int x);
 
-struct TrainerArguments {
+bool fileExists(std::string& path);
+
+struct EmbeddingArguments {
    std::string dataDir;
    std::string outputDir;
    int embeddingSize;
@@ -29,12 +31,13 @@ struct TrainerArguments {
    int numBatches;
    int maxEpochs;
    int distanceType;
+   unsigned int seed;
 
-   TrainerArguments();
+   EmbeddingArguments();
    std::string to_string();
 };
 
-TrainerArguments parseArgs(int argc, char** argv);
+EmbeddingArguments parseArgs(int argc, char** argv);
 void printUsage(char* invokedFile);
 
 }   // namespace common

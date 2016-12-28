@@ -1,36 +1,41 @@
-#include "transe/testTransE.h"
+#include "common/evaluation.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 #include <functional>
 #include <iostream>
-#include <cassert>
-#include <cstring>
-#include <cstdio>
 #include <map>
 #include <vector>
 #include <string>
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
 
 #include "common/constants.h"
 #include "common/loader.h"
 #include "common/utils.h"
-#include "transe/transe.h"
 
-namespace transe {
-
-bool L1_flag = true;
+namespace common {
 
 double cmp(std::pair<int, double> a, std::pair<int, double> b) {
    return a.second < b.second;
 }
 
-void EmbeddingTest::prepare() {
+EmbeddingEvaluation::EmbeddingEvaluation(EmbeddingArguments args) {
+   dataDir_ = args.dataDir;
+   embeddingSize_ = args.embeddingSize;
+   method_ = args.method;
+   outputDir_ = args.outputDir;
+
+   relationEmbeddingPath_ = outputDir_ + "/" + RELATION_EMBEDDING_FILE_BASENAME + "." + METHOD_TO_STRING(method_);
+   entityEmbeddingPath_ = outputDir_ + "/" + ENTITY_EMBEDDING_FILE_BASENAME + "." + METHOD_TO_STRING(method_);
+}
+
+void EmbeddingEvaluation::loadTriples() {
    std::map<std::string, int> relation2id;
    std::map<std::string, int> entity2id;
 
-   common::loadIdFile("../data/entity2id.txt", entity2id);
-   common::loadIdFile("../data/relation2id.txt", relation2id);
+   loadIdFile(dataDir_ + "/" + ENTITY_ID_FILE, entity2id);
+   loadIdFile(dataDir_ + "/" + RELATION_ID_FILE, relation2id);
 
    numEntities_ = entity2id.size();
    numRelations_ = relation2id.size();
@@ -43,12 +48,12 @@ void EmbeddingTest::prepare() {
       this->add(head, tail, relation, false);
    };
 
-   common::loadTripleFile("../data/test.txt", entity2id, relation2id, tripleCallbackTrue);
-   common::loadTripleFile("../data/train.txt", entity2id, relation2id, tripleCallbackFalse);
-   common::loadTripleFile("../data/valid.txt", entity2id, relation2id, tripleCallbackFalse);
+   loadTripleFile(dataDir_ + "/" + TEST_FILE, entity2id, relation2id, tripleCallbackTrue);
+   loadTripleFile(dataDir_ + "/" + TRAIN_FILE, entity2id, relation2id, tripleCallbackFalse);
+   loadTripleFile(dataDir_ + "/" + VALID_FILE, entity2id, relation2id, tripleCallbackFalse);
 }
 
-void EmbeddingTest::add(int head, int tail, int relation, bool addToWorkingSet) {
+void EmbeddingEvaluation::add(int head, int tail, int relation, bool addToWorkingSet) {
    if (addToWorkingSet) {
       heads_.push_back(head);
       relations_.push_back(relation);
@@ -58,14 +63,8 @@ void EmbeddingTest::add(int head, int tail, int relation, bool addToWorkingSet) 
    triples_[std::make_pair(head, relation)][tail] = 1;
 }
 
-double EmbeddingTest::tripleEnergy(int head, int tail, int relation) {
-   return transe::tripleEnergy(head, tail, relation, embeddingSize_, entityVec_, relationVec_, L1_flag);
-}
-
-void EmbeddingTest::loadEmbeddings() {
-   std::string relationEmbeddindPath = outputDir_ + "/" + RELATION_EMBEDDING_FILE_BASENAME + "." + METHOD_TO_STRING(method_);
-   FILE* relationEmbeddingFile = fopen(relationEmbeddindPath.c_str(), "r");
-
+void EmbeddingEvaluation::loadEmbeddings() {
+   FILE* relationEmbeddingFile = fopen(relationEmbeddingPath_.c_str(), "r");
    relationVec_.resize(numRelations_);
    for (int i = 0; i < numRelations_; i++) {
       relationVec_[i].resize(embeddingSize_);
@@ -75,9 +74,7 @@ void EmbeddingTest::loadEmbeddings() {
    }
    fclose(relationEmbeddingFile);
 
-   std::string entityEmbeddingPath = outputDir_ + "/" + ENTITY_EMBEDDING_FILE_BASENAME + "." + METHOD_TO_STRING(method_);
-   FILE* entityEmbeddingFile = fopen(entityEmbeddingPath.c_str(), "r");
-
+   FILE* entityEmbeddingFile = fopen(entityEmbeddingPath_.c_str(), "r");
    entityVec_.resize(numEntities_);
    for (int i = 0; i < numEntities_; i++) {
       entityVec_[i].resize(embeddingSize_);
@@ -86,15 +83,15 @@ void EmbeddingTest::loadEmbeddings() {
       }
 
       // TODO(eriq): I don't know what this check it.
-      if (common::vec_len(entityVec_[i]) - 1 > 1e-3) {
-         std::cout << "wrong_entity" << i << ' ' << common::vec_len(entityVec_[i]) << std::endl;
+      if (vec_len(entityVec_[i]) - 1 > 1e-3) {
+         std::cout << "wrong_entity" << i << ' ' << vec_len(entityVec_[i]) << std::endl;
       }
    }
    fclose(entityEmbeddingFile);
 }
 
 // If |corruptHead| is true, corrupt the head. Otherwise, corrupt the tail.
-void EmbeddingTest::evalCorruption(int head, int tail, int relation, bool corruptHead,
+void EmbeddingEvaluation::evalCorruption(int head, int tail, int relation, bool corruptHead,
                                    int* rawSumActualRank, int* filteredSumActualRank,
                                    int* rawHitsIn10, int* filteredHitsIn10) {
    // The energies of all permutation of this triple.
@@ -154,9 +151,7 @@ void EmbeddingTest::evalCorruption(int head, int tail, int relation, bool corrup
    }
 }
 
-void EmbeddingTest::run() {
-   loadEmbeddings();
-
+void EmbeddingEvaluation::run() {
    // Note that we are keeping two sets of stats.
    //  Raw: Consider any triple not the original as bad.
    //  Filtered: Ignore triples that are known good, don't consider them bad.
@@ -186,19 +181,23 @@ void EmbeddingTest::run() {
 
    double numberCorruptions = heads_.size() * 2;
 
-   printf("Raw -- Rank: %f, Hits@10: %f\n", rawSumActualRank / numberCorruptions, rawHitsIn10 / numberCorruptions);
+   printf("Raw      -- Rank: %f, Hits@10: %f\n", rawSumActualRank / numberCorruptions, rawHitsIn10 / numberCorruptions);
    printf("Filtered -- Rank: %f, Hits@10: %f\n", filteredSumActualRank / numberCorruptions, filteredHitsIn10 / numberCorruptions);
 }
 
-}  // namespace transe
-
-// TODO(eriq)
-int main(int argc, char**argv) {
-   if (argc < 2) {
-      return 1;
+void EmbeddingEvaluation::prepare() {
+   if (!fileExists(relationEmbeddingPath_)) {
+      printf("Could not find relation embedding file: %s. Make sure to specify the path and/or train.\n", relationEmbeddingPath_);
+      exit(2);
    }
 
-   transe::EmbeddingTest test(atoi(argv[1]));
-   test.prepare();
-   test.run();
+   if (!fileExists(entityEmbeddingPath_)) {
+      printf("Could not find entity embedding file: %s. Make sure to specify the path and/or train.\n", entityEmbeddingPath_);
+      exit(2);
+   }
+
+   loadTriples();
+   loadEmbeddings();
 }
+
+}  // namespace common

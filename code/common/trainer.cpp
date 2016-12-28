@@ -12,7 +12,7 @@
 
 namespace common {
 
-Trainer::Trainer(TrainerArguments args) {
+Trainer::Trainer(EmbeddingArguments args) {
    dataDir_ = args.dataDir;
    outputDir_ = args.outputDir;
    embeddingSize_ = args.embeddingSize;

@@ -1,4 +1,4 @@
-#include "transe/transETrainer.h"
+#include "transe/trainer.h"
 
 #include <map>
 #include <vector>
@@ -12,16 +12,16 @@
 
 namespace transe {
 
-TransETrainer::TransETrainer(common::TrainerArguments args)
+Trainer::Trainer(common::EmbeddingArguments args)
       : common::Trainer(args) {
    distanceType_ = args.distanceType;
 }
 
-double TransETrainer::initialEmbeddingValue() {
+double Trainer::initialEmbeddingValue() {
    return common::randn(0, 1.0 / embeddingSize_, -6 / std::sqrt(embeddingSize_), 6 / std::sqrt(embeddingSize_));
 }
 
-void TransETrainer::gradientUpdate(int head, int tail, int relation, bool corrupted) {
+void Trainer::gradientUpdate(int head, int tail, int relation, bool corrupted) {
    double modifier = corrupted ? 1.0 : -1.0;
 
    for (int i = 0; i < embeddingSize_; i++) {
@@ -44,17 +44,17 @@ void TransETrainer::gradientUpdate(int head, int tail, int relation, bool corrup
    common::norm(entityVec_next_[tail]);
 }
 
-void TransETrainer::postbatch() {
+void Trainer::postbatch() {
    relationVec_ = relationVec_next_;
    entityVec_ = entityVec_next_;
 }
 
-void TransETrainer::prebatch() {
+void Trainer::prebatch() {
    relationVec_next_ = relationVec_;
    entityVec_next_ = entityVec_;
 }
 
-double TransETrainer::tripleEnergy(int head, int tail, int relation) {
+double Trainer::tripleEnergy(int head, int tail, int relation) {
    return transe::tripleEnergy(head, tail, relation, embeddingSize_, entityVec_, relationVec_, (distanceType_ == L1_DISTANCE));
 }
 
