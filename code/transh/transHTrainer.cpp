@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "common/constants.h"
 #include "common/utils.h"
 
 namespace transh {
@@ -47,7 +48,7 @@ void TransHTrainer::gradientUpdate(int head, int tail, int relation, bool corrup
     common::norm(entity_vec_next_[head]);
     common::norm(entity_vec_next_[tail]);
 
-    common::norm(weights_next_[relation]);
+    common::norm(weights_next_[relation], false);
     // TODO(eriq): By normalizing against the weights here, are we missing a normalization with
     //  for the non-corrupted tupples against the updated weights? (updated during the corruption
     //  gradient update).
@@ -81,7 +82,7 @@ void TransHTrainer::prepTrain() {
         for (int j = 0; j < embeddingSize_; j++) {
             weights_[i][j] = initialEmbeddingValue();
         }
-        common::norm(weights_[i]);
+        common::norm(weights_[i], false);
     }
 }
 
@@ -105,15 +106,14 @@ double TransHTrainer::tripleEnergy(int head, int tail, int relation) {
 void TransHTrainer::write() {
     Trainer::write();
 
-    // TODO(eriq): Better name for this file.
-    FILE* aValueOutFile = fopen(("A." + methodName()).c_str(), "w");
+    FILE* weightOutFile = fopen((outputDir_ + "/" + WEIGHT_OUT_FILE_BASENAME + "." + methodName()).c_str(), "w");
     for (int i = 0; i < numRelations_; i++) {
         for (int j=0; j < embeddingSize_; j++) {
-            fprintf(aValueOutFile, "%.6lf\t", weights_[i][j]);
+            fprintf(weightOutFile, "%.6lf\t", weights_[i][j]);
         }
-        fprintf(aValueOutFile, "\embeddingSize_");
+        fprintf(weightOutFile, "\n");
     }
-    fclose(aValueOutFile);
+    fclose(weightOutFile);
 }
 
 }  // namespace transh

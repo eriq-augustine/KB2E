@@ -64,9 +64,9 @@ int argpos(char* flag, bool hasValue, int argc, char** argv) {
    return -1;
 }
 
-void norm(std::vector<double> &a) {
+void norm(std::vector<double> &a, bool ignoreShort) {
    double len = vec_len(a);
-   if (len > 1) {
+   if (!ignoreShort || len > 1) {
       for (int i = 0; i < a.size(); i++) {
          a[i] /= len;
       }
@@ -76,7 +76,7 @@ void norm(std::vector<double> &a) {
 void norm(std::vector<double> &a, std::vector<double> &b, double rate) {
     assert(a.size() == b.size());
 
-    norm(b);
+    norm(b, false);
     double sum = 0;
 
     while (true) {
@@ -104,7 +104,7 @@ void norm(std::vector<double> &a, std::vector<double> &b, double rate) {
         }
     }
 
-    norm(b);
+    norm(b, false);
 }
 
 int randMax(int x) {
@@ -137,7 +137,7 @@ std::string TrainerArguments::to_string() {
    rtn += std::string(ARG_EMBEDDING_SIZE) + ": " + std::to_string(embeddingSize) + ", ";
    rtn += std::string(ARG_LEARNING_RATE) + ": " + std::to_string(learningRate) + ", ";
    rtn += std::string(ARG_MARGIN) + ": " + std::to_string(margin) + ", ";
-   rtn += std::string(ARG_METHOD) + ": " + std::to_string(method) + ", ";
+   rtn += std::string(ARG_METHOD) + ": " + METHOD_TO_STRING(method) + ", ";
    rtn += std::string(ARG_NUM_BATCHES) + ": " + std::to_string(numBatches) + ", ";
    rtn += std::string(ARG_MAX_EPOCHS) + ": " + std::to_string(maxEpochs) + ", ";
    rtn += std::string(ARG_DISTANCE_TYPE) + ": " + std::to_string(distanceType) + "]";
@@ -212,7 +212,7 @@ void printUsage(char* invokedFile) {
    printf("   --%s [%d]\n", ARG_EMBEDDING_SIZE, DEFAULT_EMBEDDING_SIZE);
    printf("   --%s [%f]\n", ARG_LEARNING_RATE, DEFAULT_LEARNING_RATE);
    printf("   --%s [%f]\n", ARG_MARGIN, DEFAULT_MARGIN);
-   printf("   --%s [%d]\n", ARG_METHOD, DEFAULT_METHOD);
+   printf("   --%s [%d (%s)]\n", ARG_METHOD, DEFAULT_METHOD, METHOD_TO_STRING(DEFAULT_METHOD));
    printf("   --%s [%d]\n", ARG_NUM_BATCHES, DEFAULT_NUM_BATCHES);
    printf("   --%s [%d]\n", ARG_MAX_EPOCHS, DEFAULT_MAX_EPOCHS);
    printf("   --%s [%d]\n", ARG_DISTANCE_TYPE, DEFAULT_DISTANCE);

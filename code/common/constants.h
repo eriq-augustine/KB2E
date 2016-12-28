@@ -8,8 +8,10 @@
 #define METHOD_UNIF 0
 #define METHOD_BERN 1
 
-#define METHOD_NAME_BERN "bern"
 #define METHOD_NAME_UNIF "unif"
+#define METHOD_NAME_BERN "bern"
+
+#define METHOD_TO_STRING(x) (x == METHOD_UNIF ? METHOD_NAME_UNIF : METHOD_NAME_BERN)
 
 #define L1_DISTANCE 0
 #define L2_DISTANCE 1
@@ -19,6 +21,7 @@
 #define TRAIN_FILE "train.txt"
 #define ENTITY_OUT_FILE_BASENAME "entity2vec"
 #define RELATION_OUT_FILE_BASENAME "relation2vec"
+#define WEIGHT_OUT_FILE_BASENAME "weights"
 
 #define DEFAULT_EMBEDDING_SIZE 100
 #define DEFAULT_LEARNING_RATE 0.001

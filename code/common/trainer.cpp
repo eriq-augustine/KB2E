@@ -136,6 +136,9 @@ double Trainer::train_kb(int aHead, int aTail, int aRelation, int bHead, int bTa
    double normalEnergy = tripleEnergy(aHead, aTail, aRelation);
    double corruptedEnergy = tripleEnergy(bHead, bTail, bRelation);
 
+   // printf("   Normal:    (%d, %d, %d): %f\n", aHead, aTail, aRelation, normalEnergy);
+   // printf("   Corrupted: (%d, %d, %d): %f\n", bHead, bTail, bRelation, corruptedEnergy);
+
    if (normalEnergy + margin_ > corruptedEnergy) {
       loss = margin_ + normalEnergy - corruptedEnergy;
       gradientUpdate(aHead, aTail, aRelation, false);
