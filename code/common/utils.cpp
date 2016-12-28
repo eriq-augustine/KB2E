@@ -49,10 +49,10 @@ double vec_len(std::vector<double> &a) {
 
 // Check if the flag (- or -- version) exists in the args.
 // If so, return its index, otherwise -1.
-int argpos(char* flag, int argc, char** argv) {
+int argpos(char* flag, bool hasValue, int argc, char** argv) {
    for (int i = 1; i < argc; i++) {
       if (!std::strcmp((std::string("-") + flag).c_str(), argv[i]) || !std::strcmp((std::string("--") + flag).c_str(), argv[i])) {
-         if (i == argc - 1) {
+         if (hasValue && i == argc - 1) {
             printf("Argument missing for %s\n", flag);
             exit(1);
          }
@@ -132,8 +132,8 @@ std::string TrainerArguments::to_string() {
    std::string rtn;
 
    rtn += "Options: [";
-   rtn += std::string(ARG_DATA_DIR) + ": " + dataDir + ", ";
-   rtn += std::string(ARG_OUT_DIR) + ": " + outputDir + ", ";
+   rtn += std::string(ARG_DATA_DIR) + ": '" + dataDir + "', ";
+   rtn += std::string(ARG_OUT_DIR) + ": '" + outputDir + "', ";
    rtn += std::string(ARG_EMBEDDING_SIZE) + ": " + std::to_string(embeddingSize) + ", ";
    rtn += std::string(ARG_LEARNING_RATE) + ": " + std::to_string(learningRate) + ", ";
    rtn += std::string(ARG_MARGIN) + ": " + std::to_string(margin) + ", ";
@@ -146,54 +146,54 @@ std::string TrainerArguments::to_string() {
 }
 
 TrainerArguments parseArgs(int argc, char** argv) {
-   int index = argpos((char*)ARG_HELP, argc, argv);
+   int index = argpos((char*)ARG_HELP, false, argc, argv);
    if (index != -1) {
       printUsage((char*)argv[0]);
       exit(0);
    }
 
    TrainerArguments parsedArgs;
-   index = argpos((char*)ARG_DATA_DIR, argc, argv);
+   index = argpos((char*)ARG_DATA_DIR, true, argc, argv);
    if (index != -1) {
       parsedArgs.dataDir = argv[index + 1];
    }
 
-   index = argpos((char*)ARG_OUT_DIR, argc, argv);
+   index = argpos((char*)ARG_OUT_DIR, true, argc, argv);
    if (index != -1) {
       parsedArgs.outputDir = argv[index + 1];
    }
 
-   index = argpos((char*)ARG_EMBEDDING_SIZE, argc, argv);
+   index = argpos((char*)ARG_EMBEDDING_SIZE, true, argc, argv);
    if (index != -1) {
       parsedArgs.embeddingSize = atoi(argv[index + 1]);
    }
 
-   index = argpos((char*)ARG_LEARNING_RATE, argc, argv);
+   index = argpos((char*)ARG_LEARNING_RATE, true, argc, argv);
    if (index != -1) {
       parsedArgs.learningRate = atof(argv[index + 1]);
    }
 
-   index = argpos((char*)ARG_MARGIN, argc, argv);
+   index = argpos((char*)ARG_MARGIN, true, argc, argv);
    if (index != -1) {
       parsedArgs.margin = atof(argv[index + 1]);
    }
 
-   index = argpos((char*)ARG_METHOD, argc, argv);
+   index = argpos((char*)ARG_METHOD, true, argc, argv);
    if (index != -1) {
       parsedArgs.method = atoi(argv[index + 1]);
    }
 
-   index = argpos((char*)ARG_NUM_BATCHES, argc, argv);
+   index = argpos((char*)ARG_NUM_BATCHES, true, argc, argv);
    if (index != -1) {
       parsedArgs.numBatches = atoi(argv[index + 1]);
    }
 
-   index = argpos((char*)ARG_MAX_EPOCHS, argc, argv);
+   index = argpos((char*)ARG_MAX_EPOCHS, true, argc, argv);
    if (index != -1) {
       parsedArgs.maxEpochs = atoi(argv[index + 1]);
    }
 
-   index = argpos((char*)ARG_DISTANCE_TYPE, argc, argv);
+   index = argpos((char*)ARG_DISTANCE_TYPE, true, argc, argv);
    if (index != -1) {
       parsedArgs.distanceType = atoi(argv[index + 1]);
    }
@@ -207,15 +207,15 @@ void printUsage(char* invokedFile) {
    printf("       %s --help\n", invokedFile);
    printf("All options require a value.\n");
    printf("Options:\n");
-   printf("   --%s\n", ARG_DATA_DIR);
-   printf("   --%s\n", ARG_OUT_DIR);
-   printf("   --%s\n", ARG_EMBEDDING_SIZE);
-   printf("   --%s\n", ARG_LEARNING_RATE);
-   printf("   --%s\n", ARG_MARGIN);
-   printf("   --%s\n", ARG_METHOD);
-   printf("   --%s\n", ARG_NUM_BATCHES);
-   printf("   --%s\n", ARG_MAX_EPOCHS);
-   printf("   --%s\n", ARG_DISTANCE_TYPE);
+   printf("   --%s [%s]\n", ARG_DATA_DIR, DEFAULT_DATA_DIR);
+   printf("   --%s [%s]\n", ARG_OUT_DIR, DEFAULT_OUTPUT_DIR);
+   printf("   --%s [%d]\n", ARG_EMBEDDING_SIZE, DEFAULT_EMBEDDING_SIZE);
+   printf("   --%s [%f]\n", ARG_LEARNING_RATE, DEFAULT_LEARNING_RATE);
+   printf("   --%s [%f]\n", ARG_MARGIN, DEFAULT_MARGIN);
+   printf("   --%s [%d]\n", ARG_METHOD, DEFAULT_METHOD);
+   printf("   --%s [%d]\n", ARG_NUM_BATCHES, DEFAULT_NUM_BATCHES);
+   printf("   --%s [%d]\n", ARG_MAX_EPOCHS, DEFAULT_MAX_EPOCHS);
+   printf("   --%s [%d]\n", ARG_DISTANCE_TYPE, DEFAULT_DISTANCE);
 }
 
 }   // namespace common

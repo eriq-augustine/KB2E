@@ -14,7 +14,7 @@ double normal(double x, double miu, double sigma);
 double randn(double miu,double sigma, double min, double max);
 double sqr(double x);
 double vec_len(std::vector<double> &a);
-int argpos(char *flag, int argc, char **argv);
+int argpos(char *flag, bool hasValue, int argc, char **argv);
 void norm(std::vector<double> &a);
 void norm(std::vector<double> &a, std::vector<double> &b, double rate);
 int randMax(int x);

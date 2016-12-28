@@ -21,10 +21,10 @@ double TransETrainer::initialEmbeddingValue() {
 }
 
 void TransETrainer::gradientUpdate(int head, int tail, int relation, bool corrupted) {
-   double modifier = corrupted ? 1 : -1;
+   double modifier = corrupted ? 1.0 : -1.0;
 
    for (int i = 0; i < embeddingSize_; i++) {
-         double x = 2 * (entity_vec_[tail][i] - entity_vec_[head][i] - relation_vec_[relation][i]);
+         double x = 2.0 * (entity_vec_[tail][i] - entity_vec_[head][i] - relation_vec_[relation][i]);
          if (distanceType_ == L1_DISTANCE) {
             if (x > 0) {
                x = 1;

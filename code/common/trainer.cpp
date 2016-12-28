@@ -71,9 +71,10 @@ std::string Trainer::methodName() {
 
 void Trainer::bfgs() {
    int batchsize = heads_.size() / numBatches_;
-   double loss;
 
    for (int epoch = 0; epoch < maxEpochs_; epoch++) {
+      double loss = 0;
+
       for (int batch = 0; batch < numBatches_; batch++) {
          prebatch();
 
@@ -84,7 +85,7 @@ void Trainer::bfgs() {
 
             double pr = 1000 * relationTailMeanCooccurrence_[relations_[i]] / (relationTailMeanCooccurrence_[relations_[i]] + relationHeadMeanCooccurrence_[relations_[i]]);
 
-            if (method_ == 0) {
+            if (method_ == METHOD_UNIF) {
                pr = 500;
             }
 
@@ -92,12 +93,12 @@ void Trainer::bfgs() {
                while (triples_[std::make_pair(heads_[i], relations_[i])].count(j) > 0) {
                   j = randMax(numEntities_);
                }
-               loss = train_kb(heads_[i], tails_[i], relations_[i], heads_[i], j, relations_[i]);
+               loss += train_kb(heads_[i], tails_[i], relations_[i], heads_[i], j, relations_[i]);
             } else {
                while (triples_[std::make_pair(j, relations_[i])].count(tails_[i]) > 0) {
                   j = randMax(numEntities_);
                }
-               loss = train_kb(heads_[i], tails_[i], relations_[i], j, tails_[i], relations_[i]);
+               loss += train_kb(heads_[i], tails_[i], relations_[i], j, tails_[i], relations_[i]);
             }
          }
 
@@ -105,7 +106,7 @@ void Trainer::bfgs() {
       }
 
       // TODO(eriq): Debug
-      std::cout << "epoch: " << epoch << " " << loss << std::endl;
+      std::cout << "epoch: " << epoch << ", loss: " << loss << std::endl;
    }
 }
 
@@ -134,10 +135,11 @@ double Trainer::train_kb(int aHead, int aTail, int aRelation, int bHead, int bTa
    double loss = 0;
    double normalEnergy = tripleEnergy(aHead, aTail, aRelation);
    double corruptedEnergy = tripleEnergy(bHead, bTail, bRelation);
+
    if (normalEnergy + margin_ > corruptedEnergy) {
-         loss += margin_ + normalEnergy - corruptedEnergy;
-         gradientUpdate(aHead, aTail, aRelation, false);
-         gradientUpdate(bHead, bTail, bRelation, true);
+      loss = margin_ + normalEnergy - corruptedEnergy;
+      gradientUpdate(aHead, aTail, aRelation, false);
+      gradientUpdate(bHead, bTail, bRelation, true);
    }
 
    return loss;

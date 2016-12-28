@@ -5,8 +5,8 @@
 
 #define ID_STRING_MAX_LEN 512
 
-#define METHOD_BERN 0
-#define METHOD_UNIF 1
+#define METHOD_UNIF 0
+#define METHOD_BERN 1
 
 #define METHOD_NAME_BERN "bern"
 #define METHOD_NAME_UNIF "unif"
