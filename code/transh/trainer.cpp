@@ -4,6 +4,7 @@
 
 #include "common/constants.h"
 #include "common/utils.h"
+#include "transh/transh.h"
 
 namespace transh {
 
@@ -87,20 +88,7 @@ void Trainer::prepTrain() {
 }
 
 double Trainer::tripleEnergy(int head, int tail, int relation) {
-    double headSum = 0;
-    double tailSum = 0;
-
-    for (int i = 0; i < embeddingSize_; i++) {
-        headSum += weights_[relation][i] * entityVec_[head][i];
-        tailSum += weights_[relation][i] * entityVec_[tail][i];
-    }
-
-    double energy = 0;
-    for (int i = 0; i < embeddingSize_; i++) {
-        energy += std::fabs(entityVec_[tail][i] - tailSum * weights_[relation][i] - (entityVec_[head][i] - headSum * weights_[relation][i]) - relationVec_[relation][i]);
-    }
-
-    return energy;
+    return transh::tripleEnergy(head, tail, relation, embeddingSize_, entityVec_, relationVec_, weights_);
 }
 
 void Trainer::write() {

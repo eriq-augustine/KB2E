@@ -187,12 +187,12 @@ void EmbeddingEvaluation::run() {
 
 void EmbeddingEvaluation::prepare() {
    if (!fileExists(relationEmbeddingPath_)) {
-      printf("Could not find relation embedding file: %s. Make sure to specify the path and/or train.\n", relationEmbeddingPath_);
+      printf("Could not find relation embedding file: %s. Make sure to specify the path and/or train.\n", relationEmbeddingPath_.c_str());
       exit(2);
    }
 
    if (!fileExists(entityEmbeddingPath_)) {
-      printf("Could not find entity embedding file: %s. Make sure to specify the path and/or train.\n", entityEmbeddingPath_);
+      printf("Could not find entity embedding file: %s. Make sure to specify the path and/or train.\n", entityEmbeddingPath_.c_str());
       exit(2);
    }
 

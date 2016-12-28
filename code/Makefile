@@ -30,7 +30,7 @@ common: objects binDir
 	$(ARCHIVE) $(ARCHIVE_FLAGS) $(BIN_DIR)/common.a $(NO_MAIN_OBJ_FILES)
 
 # All the files that have mains.
-mains: binDir trainTransE trainTransH testTransE
+mains: binDir trainTransE trainTransH testTransE testTransH
 
 binDir:
 	mkdir -p $(BIN_DIR)
@@ -42,6 +42,9 @@ trainTransH: transh/bin/trainTransH.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
 testTransE: transe/bin/testTransE.o common
+	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
+
+testTransH: transh/bin/testTransH.o common
 	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $< $(BIN_DIR)/common.a
 
 # Just include the headers so we will rebuild if they change.

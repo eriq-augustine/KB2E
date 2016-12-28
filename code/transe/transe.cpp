@@ -1,6 +1,5 @@
 #include "transe/transe.h"
 
-#include <map>
 #include <vector>
 #include <cmath>
 

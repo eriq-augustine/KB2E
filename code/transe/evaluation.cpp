@@ -6,8 +6,6 @@
 
 namespace transe {
 
-bool L1_flag = true;
-
 Evaluation::Evaluation(common::EmbeddingArguments args)
       : common::EmbeddingEvaluation(args) {
    distanceType_ = args.distanceType;
