@@ -7,6 +7,7 @@
 #include <string>
 
 #include "common/constants.h"
+#include "common/loader.h"
 #include "common/utils.h"
 
 namespace common {
@@ -157,60 +158,16 @@ void Trainer::loadFiles() {
    std::map<int, std::map<int, int>> headCooccurrence;
    std::map<int, std::map<int, int>> tailCooccurrence;
 
-   int entityId;
-   char headIdStringBuf[ID_STRING_MAX_LEN];
+   loadIdFile(dataDir_ + "/" + ENTITY_ID_FILE, entity2id);
+   loadIdFile(dataDir_ + "/" + RELATION_ID_FILE, relation2id);
 
-   // TODO(eriq): Better error handling with files.
+   std::function<void(int, int, int)> tripleCallback = [=, &headCooccurrence, &tailCooccurrence](int head, int tail, int relation) {
+      headCooccurrence[relation][head]++;
+      tailCooccurrence[relation][tail]++;
+      this->add(head, tail, relation);
+   };
 
-   FILE* entityIdFile = fopen((dataDir_ + "/" + ENTITY_ID_FILE).c_str(), "r");
-   while (fscanf(entityIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
-      std::string entityIdString = headIdStringBuf;
-      entity2id[entityIdString] = entityId;
-   }
-   fclose(entityIdFile);
-
-   FILE* relationIdFile = fopen((dataDir_ + "/" + RELATION_ID_FILE).c_str(), "r");
-   while (fscanf(relationIdFile, "%s\t%d", headIdStringBuf, &entityId) == 2) {
-      std::string entityIdString = headIdStringBuf;
-      relation2id[entityIdString] = entityId;
-   }
-   fclose(relationIdFile);
-
-   char tailIdStringBuf[ID_STRING_MAX_LEN];
-   char relationIdStringBuf[ID_STRING_MAX_LEN];
-
-   FILE* trainFile = fopen((dataDir_ + "/" + TRAIN_FILE).c_str(), "r");
-   while (fscanf(trainFile,"%s\t%s\t%s", headIdStringBuf, tailIdStringBuf, relationIdStringBuf) == 3) {
-      std::string headIdString = headIdStringBuf;
-      std::string tailIdString = tailIdStringBuf;
-      std::string relationIdString = relationIdStringBuf;
-
-      bool fail = false;
-      if (entity2id.count(headIdString) == 0) {
-         std::cout << "Head entity found in training set that was not found in the identity file: " << headIdString << std::endl;
-         fail = true;
-      }
-
-      if (entity2id.count(tailIdString) == 0) {
-         std::cout << "Tail entity found in training set that was not found in the identity file: " << tailIdString << std::endl;
-         fail = true;
-      }
-
-      if (relation2id.count(relationIdString) == 0) {
-         std::cout << "Relation found in training set that was not found in the identity file: " << relationIdString << std::endl;
-         fail = true;
-      }
-
-      if (fail) {
-         continue;
-      }
-
-      headCooccurrence[relation2id[relationIdString]][entity2id[headIdString]]++;
-      tailCooccurrence[relation2id[relationIdString]][entity2id[tailIdString]]++;
-
-      add(entity2id[headIdString], entity2id[tailIdString], relation2id[relationIdString]);
-   }
-   fclose(trainFile);
+   loadTripleFile(dataDir_ + "/" + TRAIN_FILE, entity2id, relation2id, tripleCallback);
 
    for (int i = 0; i < relation2id.size(); i++) {
       // Sum the number of times this relation (i) appears.

@@ -8,6 +8,7 @@
 #include "common/constants.h"
 #include "common/trainer.h"
 #include "common/utils.h"
+#include "transe/transe.h"
 
 namespace transe {
 
@@ -54,19 +55,7 @@ void TransETrainer::prebatch() {
 }
 
 double TransETrainer::tripleEnergy(int head, int tail, int relation) {
-   double energy = 0;
-
-   if (distanceType_ == L1_DISTANCE) {
-      for (int i = 0; i < embeddingSize_; i++) {
-         energy += std::fabs(entity_vec_[tail][i] - entity_vec_[head][i] - relation_vec_[relation][i]);
-      }
-   } else {
-      for (int i = 0; i < embeddingSize_; i++) {
-         energy += common::sqr(entity_vec_[tail][i] - entity_vec_[head][i] - relation_vec_[relation][i]);
-      }
-   }
-
-   return energy;
+   return transe::tripleEnergy(head, tail, relation, embeddingSize_, entity_vec_, relation_vec_, (distanceType_ == L1_DISTANCE));
 }
 
 }  // namespace transe
