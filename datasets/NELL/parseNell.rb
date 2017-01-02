@@ -1,3 +1,4 @@
+require 'fileutils'
 require 'uri'
 
 SKIP_FIRST_LINE = true
@@ -5,7 +6,7 @@ SKIP_FIRST_LINE = true
 # Batch the inserts to we don't run out of memory.
 MAX_INSERTS = 10000
 
-INSERT_DIR = 'insert'
+INSERT_DIR = File.join('sql', 'insert')
 ENTITIES_FILE = File.join(INSERT_DIR, 'entities.sql')
 RELATIONS_FILE = File.join(INSERT_DIR, 'relations.sql')
 LITERALS_FILE = File.join(INSERT_DIR, 'literals.sql')
@@ -176,8 +177,9 @@ def parseCategories(path)
 end
 
 def parseFile(path)
-   # To save memory, we are only going to fetch specific values from the file at a time.
+   FileUtils.mkdir_p(INSERT_DIR)
 
+   # To save memory, we are only going to fetch specific values from the file at a time.
    parseEntities(path)
    parseLiterals(path)
    parseCategories(path)

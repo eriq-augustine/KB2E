@@ -7,9 +7,9 @@ fi
 
 NELL_FILE=$1
 
-psql nell < create.sql
+psql nell < sql/create.sql
 
 ruby parseNell.rb "${NELL_FILE}"
 
-psql nell < insertAll.sql
-psql nell < optimize.sql
+psql nell < sql/insertAll.sql
+psql nell < sql/optimize.sql
