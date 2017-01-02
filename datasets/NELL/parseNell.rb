@@ -2,6 +2,9 @@ require 'uri'
 
 SKIP_FIRST_LINE = true
 
+# Batch the inserts to we don't run out of memory.
+MAX_INSERTS = 10000
+
 INSERT_DIR = 'insert'
 ENTITIES_FILE = File.join(INSERT_DIR, 'entities.sql')
 RELATIONS_FILE = File.join(INSERT_DIR, 'relations.sql')
@@ -67,7 +70,11 @@ def prepValue(value, options = {})
 
    value = escape(value)
 
-   if (options[:noquote] != true)
+   if (options[:numeric] == true)
+      if (value == 'NaN')
+         value = 'NULL'
+      end
+   else
       value = "'#{value}'"
    end
 
@@ -77,17 +84,19 @@ end
 # |rowInfo| = [{:name => someName, :options => {...}}, ...]
 #  :options is passed blindly to prepValue().
 def writeInsert(path, tableName, rows, rowInfo)
-   output = [
-      "INSERT INTO #{tableName}",
-      "   (#{rowInfo.map{|row| row[:name]}.join(", ")})",
-      "VALUES"
-   ]
-
-   output << rows.map{|row| "   (#{row.map.with_index{|val, i| prepValue(val, rowInfo[i][:options])}.join(", ")})"}.join(",\n")
-   output << ';'
+   header = ''
+   header += "INSERT INTO #{tableName}\n"
+   header += "   (#{rowInfo.map{|row| row[:name]}.join(", ")})\n"
+   header += 'VALUES'
 
    File.open(path, 'w'){|file|
-      file.puts(output.join("\n"))
+      rows.each_slice(MAX_INSERTS){|insertRows|
+         valuesString = insertRows.map{|row| "   (#{row.map.with_index{|val, i| prepValue(val, rowInfo[i][:options])}.join(", ")})"}.join(",\n")
+
+         file.puts(header)
+         file.puts(valuesString)
+         file.puts(";\n")
+      }
    }
 end
 
@@ -102,8 +111,8 @@ def parseTriples(path)
       {:name => 'headNellId'},
       {:name => 'relationNellId'},
       {:name => 'tailNellId'},
-      {:name => 'promotionIteration', :options => {:noquote => true}},
-      {:name => 'probability', :options => {:noquote => true}},
+      {:name => 'promotionIteration', :options => {:numeric => true}},
+      {:name => 'probability', :options => {:numeric => true}},
       {:name => 'source', :options => {:urldecode => true}},
       {:name => 'candidateSource', :options => {:urldecode => true}}
    ])
