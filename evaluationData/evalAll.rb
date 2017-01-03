@@ -13,10 +13,16 @@ SEED = 4
 DATA_DIR = File.absolute_path(File.join('..', 'data'))
 
 DATASET_DIR = File.absolute_path(File.join('..', 'datasets'))
+
 FB15K_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k'))
+FB15K_005_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k_005'))
+FB15K_010_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k_010'))
+FB15K_050_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k_050'))
+
+NELL_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'Nell', 'NELL'))
 
 DISTANCE_L1 = 0
-DISTANCE_L2 = 0
+DISTANCE_L2 = 1
 
 METHOD_UNIFORM = 0
 METHOD_BERNOULLI = 1
@@ -32,62 +38,83 @@ EXPERIMENT_DIR = File.absolute_path(File.join('..', 'code'))
 COMMAND_TYPE_TRAIN = 'train'
 COMMAND_TYPE_EVAL = 'eval'
 
-EXPERIMENTS = [
-   # TransE
-   {
-      :method => 'TransE',
-      :data => FB15K_DATA_DIR,
-      :args => {
-         'size' => 50,
-         'margin' => 1,
-         'method' => METHOD_UNIFORM,
-         'rate' => 0.01,
-         'batches' => 100,
-         'epochs' => 1000,
-         'distance' => DISTANCE_L1
-      }
-   },
-   {
-      :method => 'TransE',
-      :data => FB15K_DATA_DIR,
-      :args => {
-         'size' => 50,
-         'margin' => 1,
-         'method' => METHOD_BERNOULLI,
-         'rate' => 0.01,
-         'batches' => 100,
-         'epochs' => 1000,
-         'distance' => DISTANCE_L1
-      }
-   },
-   # TransH
-   {
-      :method => 'TransH',
-      :data => FB15K_DATA_DIR,
-      :args => {
-         'size' => 50,
-         'margin' => 1,
-         'method' => METHOD_UNIFORM,
-         'rate' => 0.01,
-         'batches' => 100,
-         'epochs' => 1000,
-         'distance' => DISTANCE_L1
-      }
-   },
-   {
-      :method => 'TransH',
-      :data => FB15K_DATA_DIR,
-      :args => {
-         'size' => 50,
-         'margin' => 1,
-         'method' => METHOD_BERNOULLI,
-         'rate' => 0.01,
-         'batches' => 100,
-         'epochs' => 1000,
-         'distance' => DISTANCE_L1
+TRANSE_EXPERIMENTS = {
+   :method => 'TransE',
+   :data => [FB15K_DATA_DIR, FB15K_005_DATA_DIR, FB15K_010_DATA_DIR, FB15K_050_DATA_DIR, NELL_DATA_DIR],
+   :args => {
+      :size => [50, 100],
+      :method => [METHOD_UNIFORM, METHOD_BERNOULLI],
+      :distance => [DISTANCE_L1, DISTANCE_L2]
+   }
+}
+
+TRANSH_EXPERIMENTS = {
+   :method => 'TransH',
+   :data => [FB15K_DATA_DIR, FB15K_005_DATA_DIR, FB15K_010_DATA_DIR, FB15K_050_DATA_DIR, NELL_DATA_DIR],
+   :args => {
+      :size => [50, 100],
+      :method => [METHOD_UNIFORM, METHOD_BERNOULLI],
+      :distance => [DISTANCE_L1]
+   }
+}
+
+# Make sure the core settings mirror TRANSE since that is the seed data.
+TRANSR_EXPERIMENTS = {
+   :method => 'TransR',
+   :data => [FB15K_DATA_DIR, FB15K_005_DATA_DIR, FB15K_010_DATA_DIR, FB15K_050_DATA_DIR, NELL_DATA_DIR],
+   :args => {
+      :size => [50, 100],
+      :method => [METHOD_UNIFORM, METHOD_BERNOULLI],
+      :distance => [DISTANCE_L1, DISTANCE_L2]
+   }
+}
+
+# TransR needs some additional params.
+def buildTransRExperiments(experimentsDefinition)
+   experiments = buildExperiments(experimentsDefinition)
+
+   experiments.each{|experiment|
+      # TransE is the seed data, so grab the data from there.
+      seeDataDir = getOutputDir(experiment).sub('TransR', 'TransE')
+      experiment[:args]['seeddatadir'] = seeDataDir
+
+      # TODO(eriq): We are actually missing a set of experiments here.
+      # The seed method and outer method are actually independent.
+      experiment[:args]['seedmethod'] = experiment[:args]['method']
+   }
+
+   return experiments
+end
+
+# Take a condensed definition of some experiments and expand it out.
+# TODO(eriq): This is pretty hacky and not robust at all.
+def buildExperiments(experimentsDefinition)
+   experiments = []
+
+   experimentsDefinition[:data].each{|dataset|
+      experimentsDefinition[:args][:size].each{|embeddingSize|
+         experimentsDefinition[:args][:method].each{|method|
+            experimentsDefinition[:args][:distance].each{|distance|
+               experiments << {
+                  :method => experimentsDefinition[:method],
+                  :data => dataset,
+                  :args => {
+                     'size' => embeddingSize,
+                     'margin' => 1,
+                     'method' => method,
+                     'rate' => 0.01,
+                     'batches' => 100,
+                     'epochs' => 1000,
+                     'distance' => distance
+                  }
+               }
+            }
+         }
       }
    }
-]
+
+   return experiments
+end
 
 def getId(experiment)
    method = experiment[:method]
@@ -138,7 +165,6 @@ def train(experiment)
    stdoutFile = File.absolute_path(File.join(outputDir, 'train.txt'))
    stderrFile = File.absolute_path(File.join(outputDir, 'train.err'))
 
-   # TEST
    puts "Training: #{getId(experiment)}"
 
    run("mkdir -p '#{outputDir}'")
@@ -155,7 +181,6 @@ def evaluate(experiment)
    stdoutFile = File.absolute_path(File.join(outputDir, 'eval.txt'))
    stderrFile = File.absolute_path(File.join(outputDir, 'eval.err'))
 
-   # TEST
    puts "Evaluating: #{getId(experiment)}"
 
    run("cd '#{EXPERIMENT_DIR}' && #{getCommand(experiment, COMMAND_TYPE_EVAL)}", stdoutFile, stderrFile)
@@ -221,11 +246,18 @@ def trainAll(experiments)
    pool.shutdown()
 end
 
-def main(experiments)
+def main(args)
+   experiments = buildExperiments(TRANSE_EXPERIMENTS) + buildExperiments(TRANSH_EXPERIMENTS)
+
+   # Some methods require data from other experiments and must be run after.
+   experiments2 = buildTransRExperiments(TRANSR_EXPERIMENTS)
+
    globalSetup(experiments)
+
    trainAll(experiments)
+   trainAll(experiments2)
 end
 
 if (__FILE__ == $0)
-   main(EXPERIMENTS)
+   main(ARGV)
 end
