@@ -44,7 +44,7 @@ std::string EmbeddingArguments::to_string() {
    rtn += std::string(ARG_MAX_EPOCHS) + ": " + std::to_string(maxEpochs) + ", ";
    rtn += std::string(ARG_DISTANCE_TYPE) + ": " + std::to_string(distanceType) + ", ";
    rtn += std::string(ARG_SEED_DATA_DIR) + ": '" + seedDataDir + "', ";
-   rtn += std::string(ARG_SEED_METHOD) + ": " + std::to_string(seedMethod) + ", ";
+   rtn += std::string(ARG_SEED_METHOD) + ": " + METHOD_TO_STRING(seedMethod) + ", ";
    rtn += std::string(ARG_SEED) + ": " + std::to_string(seed) + "]";
 
    return rtn;
@@ -137,7 +137,7 @@ void printUsage(char* invokedFile) {
    printf("   --%s [%d]\n", ARG_MAX_EPOCHS, DEFAULT_MAX_EPOCHS);
    printf("   --%s [%d]\n", ARG_DISTANCE_TYPE, DEFAULT_DISTANCE);
    printf("   --%s [%s] (TransR only)\n", ARG_SEED_DATA_DIR, DEFAULT_SEED_DATA_DIR);
-   printf("   --%s [%d] (TransR only)\n", ARG_SEED_METHOD, DEFAULT_SEED_METHOD);
+   printf("   --%s [%d (%s)] (TransR only)\n", ARG_SEED_METHOD, DEFAULT_SEED_METHOD, METHOD_TO_STRING(DEFAULT_SEED_METHOD));
    printf("   --%s [now]\n", ARG_SEED);
 }
 

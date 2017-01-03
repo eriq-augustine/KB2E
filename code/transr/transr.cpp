@@ -30,12 +30,10 @@ double tripleEnergy(int head, int tail, int relation,
    }
 
    double sum = 0;
-   if (distanceType == L1_DISTANCE) {
-      for (int i = 0; i < embeddingSize; i++) {
+   for (int i = 0; i < embeddingSize; i++) {
+      if (distanceType == L1_DISTANCE) {
          sum += fabs(tailVec[i] - headVec[i] - relationVec[relation][i]);
-      }
-   } else {
-      for (int i=0; i<embeddingSize; i++) {
+      } else {
          sum += common::sqr(tailVec[i] - headVec[i] - relationVec[relation][i]);
       }
    }
