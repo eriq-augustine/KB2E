@@ -4,7 +4,7 @@ require 'fileutils'
 
 require 'pg'
 
-OUT_DIR = 'out'
+OUT_DIR = 'NELL'
 DB_NAME = 'nell'
 
 # How much of the data to use for a training set.
