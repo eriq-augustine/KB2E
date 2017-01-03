@@ -1,9 +1,3 @@
-DROP TABLE IF EXISTS EntityCategories;
-DROP TABLE IF EXISTS EntityLiteralStrings;
-DROP TABLE IF EXISTS Triples;
-DROP TABLE IF EXISTS Relations;
-DROP TABLE IF EXISTS Entities;
-
 -- TODO(eriq): Are cetegories shared between entities and relations?
 -- TODO(eriq): Examine the literal strings to see if they are shared.
 -- TODO(eriq): Check for other columns that need url decoding.
@@ -19,6 +13,7 @@ DROP TABLE IF EXISTS Entities;
 
 CREATE TABLE Entities (
    id SERIAL CONSTRAINT PK_Entities_id PRIMARY KEY,
+   isConcept BOOLEAN NOT NULL,
    nellId TEXT NOT NULL UNIQUE
 );
 

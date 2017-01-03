@@ -34,6 +34,11 @@ CATEGORIES_FOR_ENTITY = 10
 CATEGORIES_FOR_VALUE = 11
 CANDIDATE_SOURCE = 12
 
+COL_TYPE_STRING = 'string'
+COL_TYPE_INT = 'int'
+COL_TYPE_FLOAT = 'float'
+COL_TYPE_BOOL = 'bool'
+
 # [{valueIndex => value, ...}, ...] will be returned.
 # One hash per line.
 def fetchValues(path, indexes)
@@ -69,14 +74,26 @@ def prepValue(value, options = {})
       value = URI.unescape(value)
    end
 
-   value = escape(value)
-
-   if (options[:numeric] == true)
+   if (options[:type] == COL_TYPE_INT)
       if (value == 'NaN')
          value = 'NULL'
+      else
+         value = "#{value.to_i()}"
+      end
+   elsif (options[:type] == COL_TYPE_FLOAT)
+      if (value == 'NaN')
+         value = 'NULL'
+      else
+         value = "#{value.to_f()}"
+      end
+   elsif (options[:type] == COL_TYPE_BOOL)
+      if (value || value == 'true')
+         value = true
+      else
+         value = false
       end
    else
-      value = "'#{value}'"
+      value = "'#{escape(value)}'"
    end
 
    return value
@@ -112,8 +129,8 @@ def parseTriples(path)
       {:name => 'headNellId'},
       {:name => 'relationNellId'},
       {:name => 'tailNellId'},
-      {:name => 'promotionIteration', :options => {:numeric => true}},
-      {:name => 'probability', :options => {:numeric => true}},
+      {:name => 'promotionIteration', :options => {:type => COL_TYPE_INT}},
+      {:name => 'probability', :options => {:type => COL_TYPE_FLOAT}},
       {:name => 'source', :options => {:urldecode => true}},
       {:name => 'candidateSource', :options => {:urldecode => true}}
    ])
@@ -129,12 +146,20 @@ def parseRelations(path)
 end
 
 def parseEntities(path)
-   rows = fetchValues(path, [ENTITY]).map{|val| [val[ENTITY]]}
+   rawRows = fetchValues(path, [ENTITY, VALUE])
+   
+   rows  = rawRows.map{|rawRow| [rawRow[ENTITY], true]}
+   rows += rawRows.map{|rawRow| [rawRow[VALUE], rawRow[VALUE].start_with?('concept:')]}
+
+   rawRows = nil
 
    # Costly, but necessary...
    rows.uniq!
 
-   writeInsert(ENTITIES_FILE, ENTITIES_TABLE, rows, [{:name => 'nellId'}])
+   writeInsert(ENTITIES_FILE, ENTITIES_TABLE, rows, [
+      {:name => 'nellId'},
+      {:name => 'isConcept', :options => {:type => COL_TYPE_BOOL}}
+   ])
 end
 
 def parseLiterals(path)
@@ -143,7 +168,7 @@ def parseLiterals(path)
       VALUE, VALUE_LITERALSTRINGS, BEST_VALUE_LITERALSTRING
    ])
 
-   rows = rawRows.map{|rawRow| [rawRow[ENTITY], rawRow[ENTITY_LITERALSTRINGS], rawRow[BEST_ENTITY_LITERALSTRING]]}
+   rows  = rawRows.map{|rawRow| [rawRow[ENTITY], rawRow[ENTITY_LITERALSTRINGS], rawRow[BEST_ENTITY_LITERALSTRING]]}
    rows += rawRows.map{|rawRow| [rawRow[VALUE], rawRow[VALUE_LITERALSTRINGS], rawRow[BEST_VALUE_LITERALSTRING]]}
 
    # Clean it up plz.
@@ -161,7 +186,7 @@ end
 def parseCategories(path)
    rawRows = fetchValues(path, [ENTITY, CATEGORIES_FOR_ENTITY, VALUE, CATEGORIES_FOR_VALUE])
 
-   rows = rawRows.map{|rawRow| [rawRow[ENTITY], rawRow[CATEGORIES_FOR_ENTITY]]}
+   rows  = rawRows.map{|rawRow| [rawRow[ENTITY], rawRow[CATEGORIES_FOR_ENTITY]]}
    rows += rawRows.map{|rawRow| [rawRow[VALUE], rawRow[CATEGORIES_FOR_VALUE]]}
 
    # Clean it up plz.
