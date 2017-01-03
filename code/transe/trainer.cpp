@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 
+#include "common/args.h"
 #include "common/constants.h"
 #include "common/trainer.h"
 #include "common/utils.h"

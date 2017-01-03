@@ -33,6 +33,9 @@
 #define DEFAULT_MAX_EPOCHS 1000
 #define DEFAULT_DISTANCE L1_DISTANCE
 
+#define DEFAULT_SEED_DATA_DIR "."
+#define DEFAULT_SEED_METHOD METHOD_UNIF
+
 #define DEFAULT_DATA_DIR "../data"
 #define DEFAULT_OUTPUT_DIR "."
 
@@ -46,6 +49,8 @@
 #define ARG_NUM_BATCHES "batches"
 #define ARG_MAX_EPOCHS "epochs"
 #define ARG_DISTANCE_TYPE "distance"
+#define ARG_SEED_DATA_DIR "seeddatadir"
+#define ARG_SEED_METHOD "seedmethod"
 #define ARG_SEED "seed"
 
 #endif  // COMMON_CONSTANTS_H_

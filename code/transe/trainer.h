@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "common/args.h"
 #include "common/trainer.h"
 #include "common/utils.h"
 

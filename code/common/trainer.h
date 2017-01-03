@@ -6,15 +6,13 @@
 #include <string>
 #include <utility>
 
+#include "common/args.h"
 #include "common/utils.h"
 
 namespace common {
 
 class Trainer {
    public:
-      std::string dataDir_;
-      std::string outputDir_;
-
       explicit Trainer(EmbeddingArguments args);
 
       void add(int head, int tail, int relation);
@@ -31,6 +29,9 @@ class Trainer {
 
       int numBatches_;
       int maxEpochs_;
+
+      std::string dataDir_;
+      std::string outputDir_;
 
       std::vector<std::vector<double>> relationVec_;
       std::vector<std::vector<double>> entityVec_;

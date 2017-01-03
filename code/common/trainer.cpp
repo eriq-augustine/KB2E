@@ -63,11 +63,7 @@ void Trainer::train() {
 }
 
 std::string Trainer::methodName() {
-   if (method_ == METHOD_BERN) {
-      return METHOD_NAME_BERN;
-   }
-
-   return METHOD_NAME_UNIF;
+   return METHOD_TO_STRING(method_);
 }
 
 void Trainer::bfgs() {
@@ -79,8 +75,7 @@ void Trainer::bfgs() {
       for (int batch = 0; batch < numBatches_; batch++) {
          prebatch();
 
-         for (int k = 0; k < batchsize; k++)
-         {
+         for (int k = 0; k < batchsize; k++) {
             int i = randMax(heads_.size());
             int j = randMax(numEntities_);
 

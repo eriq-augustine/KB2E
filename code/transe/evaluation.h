@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 
+#include "common/args.h"
 #include "common/evaluation.h"
 
 namespace transe {
