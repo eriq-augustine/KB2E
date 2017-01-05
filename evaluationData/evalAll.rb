@@ -119,7 +119,16 @@ end
 def getId(experiment)
    method = experiment[:method]
    data = File.basename(experiment[:data])
-   return "#{method}_#{data}_[#{experiment[:args].keys.map{|key| "#{key}:#{experiment[:args][key]}"}.join(',')}]"
+
+   # Make a copy of the args, since we may need to override some for id purposes.
+   args = Hash.new().merge(experiment[:args])
+
+   if (args.include?('seeddatadir'))
+      args['seeddatadir'] = File.basename(args['seeddatadir'])
+   end
+
+   argString = args.keys.map{|key| "#{key}:#{args[key]}"}.join(',')
+   return "#{method}_#{data}_[#{argString}]"
 end
 
 # Get the dir to put the results.
