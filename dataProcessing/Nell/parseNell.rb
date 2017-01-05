@@ -204,7 +204,9 @@ end
 def removeOldFiles()
    toRemove = [ENTITIES_FILE, RELATIONS_FILE, LITERALS_FILE, CATEGORIES_FILE, TRIPLES_FILE]
    toRemove.each{|path|
-      FileUtils.rm(path)
+      if (File.exists?(path))
+         FileUtils.rm(path)
+      end
    }
 end
 
@@ -215,10 +217,12 @@ def parseFile(path)
 
    fetchValues(path){|rawRows|
       parseEntities(path, rawRows)
-      parseLiterals(path, rawRows)
-      parseCategories(path, rawRows)
       parseRelations(path, rawRows)
       parseTriples(path, rawRows)
+
+      # No one is actually using these currently.
+      # parseLiterals(path, rawRows)
+      # parseCategories(path, rawRows)
    }
 end
 
