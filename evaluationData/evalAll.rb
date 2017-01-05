@@ -19,7 +19,7 @@ FB15K_005_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k_005'))
 FB15K_010_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k_010'))
 FB15K_050_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'FB15k_050'))
 
-NELL_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'Nell', 'NELL'))
+NELL_DATA_DIR = File.absolute_path(File.join(DATASET_DIR, 'NELL_95'))
 
 DISTANCE_L1 = 0
 DISTANCE_L2 = 1
