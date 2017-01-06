@@ -22,6 +22,12 @@ class Trainer : public common::Trainer {
       std::string seedDataDir_;
       int seedMethod_;
 
+      // Vectors that will be resued for energy calculation.
+      // We will allocate once to speed up energy calculation.
+      // Both will be |embeddingSize_| large.
+      std::vector<double> headWorkVec_;
+      std::vector<double> tailWorkVec_;
+
       std::vector<std::vector<std::vector<double>>> weights_;
 
       // The next values for the embeddings.

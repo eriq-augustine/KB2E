@@ -15,13 +15,8 @@ double tripleEnergy(int head, int tail, int relation,
                     std::vector<std::vector<double>>& entityVec,
                     std::vector<std::vector<double>>& relationVec,
                     std::vector<std::vector<std::vector<double>>>& weights,
-                    int distanceType) {
-   std::vector<double> headVec;
-   std::vector<double> tailVec;
-
-   headVec.resize(embeddingSize);
-   tailVec.resize(embeddingSize);
-
+                    int distanceType,
+                    std::vector<double>& headVec, std::vector<double>& tailVec) {
    for (int i = 0; i < embeddingSize; i++) {
       for (int j = 0; j < embeddingSize; j++) {
          headVec[i] += weights[relation][j][i] * entityVec[head][j];

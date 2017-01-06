@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-O2 -I.
+CFLAGS=-O3 -I.
 
 ARCHIVE=ar
 ARCHIVE_FLAGS=-rcs
@@ -16,11 +16,6 @@ NO_MAIN_CPP_FILES = $(shell find -name *.cpp | xargs grep -L 'int main' | sed 's
 NO_MAIN_OBJ_FILES = $(NO_MAIN_CPP_FILES:%.cpp=%.o)
 
 all: objects common mains
-
-# TEST
-# MAIN_FILES = $(shell find -name *.cpp | xargs grep -l 'int main' | sed 's/^\.\///')
-# $(info MAIN_FILES is $(MAIN_FILES))
-# $(info CFLAGS is $(CFLAGS))
 
 # All bject files
 objects: $(OBJ_FILES) $(HEADER_FILES)

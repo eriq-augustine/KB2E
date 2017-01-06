@@ -11,7 +11,8 @@ double tripleEnergy(int head, int tail, int relation,
                     std::vector<std::vector<double>>& entityVec,
                     std::vector<std::vector<double>>& relationVec,
                     std::vector<std::vector<std::vector<double>>>& weights,
-                    int distanceType);
+                    int distanceType,
+                    std::vector<double>& headVec, std::vector<double>& tailVec);
 
 }  // namespace transr
 

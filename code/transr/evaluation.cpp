@@ -17,10 +17,18 @@ Evaluation::Evaluation(common::EmbeddingArguments args)
    distanceType_ = args.distanceType;
    seedDataDir_ = args.seedDataDir;
    seedMethod_ = args.seedMethod;
+
+   // Initialize some vectors that will be reused.
+   headWorkVec_.resize(embeddingSize_);
+   tailWorkVec_.resize(embeddingSize_);
 }
 
 double Evaluation::tripleEnergy(int head, int tail, int relation) {
-   return transr::tripleEnergy(head, tail, relation, embeddingSize_, entityVec_, relationVec_, weights_, distanceType_);
+   return transr::tripleEnergy(head, tail, relation,
+                               embeddingSize_,
+                               entityVec_, relationVec_, weights_,
+                               distanceType_,
+                               headWorkVec_, tailWorkVec_);
 }
 
 void Evaluation::loadEmbeddings() {
