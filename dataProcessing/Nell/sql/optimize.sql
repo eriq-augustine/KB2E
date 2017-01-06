@@ -45,6 +45,16 @@ DROP COLUMN relationNellId,
 DROP COLUMN tailNellId
 ;
 
+-- Simple Indexes
+CREATE INDEX IX_Triples_head ON Triples (head);
+CREATE INDEX IX_Triples_relation ON Triples (relation);
+CREATE INDEX IX_Triples_tail ON Triples (tail);
+CREATE INDEX IX_Entities_isConcept_id ON Entities (isConcept, id);
+
+-- Enable if we start using literals or categories.
+-- CREATE INDEX IX_EntityLiteralStrings_entityId ON EntityLiteralStrings (entityId);
+-- CREATE INDEX IX_EntityCategories_entityId ON EntityCategories (entityId);
+
 -- Support table
 
 -- Note that these are the number of triples each entity occurs in,
@@ -94,6 +104,9 @@ FROM Triples
 GROUP BY relation
 ;
 
+CREATE INDEX IX_EntityCounts_entityCount_entityId ON EntityCounts (entityCount, entityId);
+CREATE INDEX IX_RelationCounts_relationCount_relationId ON RelationCounts (relationCount, relationId);
+
 -- Triples that may appear in the embedding data set.
 CREATE TABLE CandidateTriples (
    id SERIAL CONSTRAINT PK_CandidateTriples_id PRIMARY KEY,
@@ -140,16 +153,4 @@ FROM
    ) RC ON RC.relationId = T.relation
 ;
 
--- Indexes
-CREATE INDEX IX_Triples_head ON Triples (head);
-CREATE INDEX IX_Triples_relation ON Triples (relation);
-CREATE INDEX IX_Triples_tail ON Triples (tail);
-
--- Enable if we start using literals or categories.
--- CREATE INDEX IX_EntityLiteralStrings_entityId ON EntityLiteralStrings (entityId);
--- CREATE INDEX IX_EntityCategories_entityId ON EntityCategories (entityId);
-
-CREATE INDEX IX_Entities_isConcept_id ON Entities (isConcept, id);
-CREATE INDEX IX_EntityCounts_entityCount_entityId ON EntityCounts (entityCount, entityId);
-CREATE INDEX IX_RelationCounts_relationCount_relationId ON RelationCounts (relationCount, relationId);
 CREATE INDEX IX_CandidateTriples_tripleId ON CandidateTriples (tripleId);
