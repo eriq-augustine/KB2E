@@ -60,7 +60,13 @@ def fetchValues(path, &block)
          end
 
          # Make sure not to strip first just in case there are empty files at the end.
-         values << line.split("\t").map{|val| val.strip()}
+         row = line.split("\t").map{|val| val.strip()}
+
+         # Sometimes these values are bracketed.
+         row[ITERATION_OF_PROMOTION].gsub!(/(^\[)|(\]$)/, '')
+         row[PROBABILITY].gsub!(/(^\[)|(\]$)/, '')
+
+         values << row
 
          if (values.size() == PAGE_SIZE)
             block.call(values)
