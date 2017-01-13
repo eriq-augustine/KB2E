@@ -102,7 +102,7 @@ void Trainer::bfgs() {
       }
 
       // TODO(eriq): Debug
-      std::cout << "epoch: " << epoch << ", loss: " << loss << std::endl;
+      printf("Epoch: %d, Loss: %f\n", epoch, loss);
    }
 }
 

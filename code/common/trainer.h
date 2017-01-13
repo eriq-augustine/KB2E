@@ -56,7 +56,7 @@ class Trainer {
 
       //
 
-      void bfgs();
+      virtual void bfgs();
       double train_kb(int e1_a,int e2_a,int rel_a,int e1_b,int e2_b,int rel_b);
       std::string methodName();
 
