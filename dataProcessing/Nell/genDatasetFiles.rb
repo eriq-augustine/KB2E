@@ -1,5 +1,6 @@
 #!/bin/ruby
 
+require 'date'
 require 'fileutils'
 
 require 'pg'
@@ -26,7 +27,8 @@ TRAIN_FILENAME = 'train.txt'
 VALID_FILENAME = 'valid.txt'
 
 def formatDatasetName(minProbability, maxProbability, minEntityMentions, minRelationMentions)
-   return "#{OUT_BASENAME}_#{"%03d" % (minProbability * 100)}_#{"%03d" % (maxProbability * 100)}_[#{"%03d" % minEntityMentions},#{"%03d" % minRelationMentions}]"
+   timestamp = DateTime.now().strftime('%Y%m%d%H%M')
+   return "#{OUT_BASENAME}_#{"%03d" % (minProbability * 100)}_#{"%03d" % (maxProbability * 100)}_[#{"%03d" % minEntityMentions},#{"%03d" % minRelationMentions}]_#{timestamp}"
 end
 
 def fetchTriples(minProbability, maxProbability, minEntityMentions, minRelationMentions)
