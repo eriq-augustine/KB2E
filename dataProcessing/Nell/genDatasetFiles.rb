@@ -18,7 +18,7 @@ DEFAULT_MIN_ENTITY_MENTIONS = 20
 DEFAULT_MIN_RELATION_MENTIONS = 5
 
 # About the same as Freebase.
-MAX_TRIPLES = 600000
+MAX_TRIPLES = 500000
 
 ENTITY_ID_FILENAME = 'entity2id.txt'
 RELATION_ID_FILENAME = 'relation2id.txt'
@@ -26,9 +26,8 @@ TEST_FILENAME = 'test.txt'
 TRAIN_FILENAME = 'train.txt'
 VALID_FILENAME = 'valid.txt'
 
-def formatDatasetName(minProbability, maxProbability, minEntityMentions, minRelationMentions)
-   timestamp = DateTime.now().strftime('%Y%m%d%H%M')
-   return "#{OUT_BASENAME}_#{"%03d" % (minProbability * 100)}_#{"%03d" % (maxProbability * 100)}_[#{"%03d" % minEntityMentions},#{"%03d" % minRelationMentions}]_#{timestamp}"
+def formatDatasetName(suffix, minProbability, maxProbability, minEntityMentions, minRelationMentions)
+   return "#{OUT_BASENAME}_#{"%03d" % (minProbability * 100)}_#{"%03d" % (maxProbability * 100)}_[#{"%03d" % minEntityMentions},#{"%03d" % minRelationMentions}]_#{suffix}"
 end
 
 def fetchTriples(minProbability, maxProbability, minEntityMentions, minRelationMentions)
@@ -96,7 +95,7 @@ def printUsage()
 end
 
 def parseArgs(args)
-   if (args.size() > 4 || args.map{|arg| arg.downcase().gsub('-', '')}.include?('help'))
+   if (args.size() > 5 || args.map{|arg| arg.downcase().gsub('-', '')}.include?('help'))
       printUsage()
       exit(2)
    end
@@ -105,6 +104,7 @@ def parseArgs(args)
    maxProbability = DEFAULT_MAX_PROBABILITY
    minEntityMentions = DEFAULT_MIN_ENTITY_MENTIONS
    minRelationMentions = DEFAULT_MIN_RELATION_MENTIONS
+   suffix = DateTime.now().strftime('%Y%m%d%H%M')
 
    if (args.size() > 0)
       minProbability = args[0].to_f()
@@ -122,6 +122,10 @@ def parseArgs(args)
       minRelationMentions = args[3].to_i()
    end
 
+   if (args.size() > 4)
+      suffix = args[4]
+   end
+
    if (minProbability < 0 || minProbability > 1 || maxProbability < 0 || maxProbability > 1)
       puts "Probabilities should be between 0 and 1 inclusive."
       exit(3)
@@ -132,15 +136,15 @@ def parseArgs(args)
       exit(4)
    end
 
-   return minProbability, maxProbability, minEntityMentions, minRelationMentions
+   return minProbability, maxProbability, minEntityMentions, minRelationMentions, suffix
 end
 
 def main(args)
-   minProbability, maxProbability, minEntityMentions, minRelationMentions = parseArgs(args)
+   minProbability, maxProbability, minEntityMentions, minRelationMentions, suffix = parseArgs(args)
 
    triples = fetchTriples(minProbability, maxProbability, minEntityMentions, minRelationMentions)
 
-   datasetDir = File.join(OUT_DIR, formatDatasetName(minProbability, maxProbability, minEntityMentions, minRelationMentions))
+   datasetDir = File.join(OUT_DIR, formatDatasetName(suffix, minProbability, maxProbability, minEntityMentions, minRelationMentions))
    FileUtils.mkdir_p(datasetDir)
 
    writeEntities(File.join(datasetDir, ENTITY_ID_FILENAME), triples)
