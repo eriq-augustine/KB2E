@@ -7,8 +7,7 @@ require 'open3'
 require 'thread/pool'
 
 # TEST: Need more memory
-# NUM_THREADS = Etc.nprocessors - 1
-NUM_THREADS = Etc.nprocessors - 4
+NUM_THREADS = Etc.nprocessors - 1
 
 SEED = 4
 
@@ -67,7 +66,7 @@ NEG_METHOD_NAME = {
    METHOD_BERNOULLI => 'bern'
 }
 
-OUTPUT_DIR = File.absolute_path('.')
+OUTPUT_DIR = File.absolute_path('.', 'results')
 EXPERIMENT_DIR = File.absolute_path(File.join('..', 'code'))
 
 COMMAND_TYPE_TRAIN = 'train'
