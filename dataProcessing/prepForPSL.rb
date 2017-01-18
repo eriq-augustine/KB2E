@@ -166,24 +166,32 @@ def convertIds(datasetDir, outDir)
    convertIdFile(File.join(datasetDir, VALID_FILE), File.join(outDir, VALID_FILE), entityMapping, relationMapping)
 end
 
-# Make all the targets which include all the test triples and all their corruptions.
-def genTargets(datasetDir, outDir)
-   if (File.exists?(File.join(outDir, TARGETS_FILE)))
+# Generate each target and compute the energy for each target.
+# We do target generation and energy computation in the same step so we do not urite
+# targets that have too high energy.
+def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
+   if (File.exists?(File.join(outDir, ENERGY_FILE)))
       return
    end
 
+   targetsOutFile = File.open(File.join(outDir, TARGETS_FILE), 'w')
+   energyOutFile = File.open(File.join(outDir, ENERGY_FILE), 'w')
+
+   entityEmbeddings, relationEmbeddings = loadEmbeddings(embeddingDir)
    targets = loadIdTriples(File.join(outDir, TEST_FILE))
-   count = 0
+
+   targetCount = 0
+   seenCorruptions = Set.new()
+   corruptions = []
 
    # To reduce memory consumption, we will only look at one relation at a time.
    relations = targets.map{|target| target[RELATION]}.uniq()
    numEntities = loadMapping(File.join(datasetDir, ENTITY_ID_FILE)).size()
 
-   outFile = File.open(File.join(outDir, TARGETS_FILE), 'w')
-   outFile.puts(targets.each_with_index().map{|target, i| "#{count + i}\t#{target.join("\t")}"}.join("\n"))
-   count += targets.size()
-
-   corruptions = Set.new()
+   # [[id, energy], ...]
+   energies = []
+   # {energy.round(2) => count, ...}
+   energyHistogram = Hash.new{|hash, key| hash[key] = 0}
 
    relations.each{|relation|
       targets.each{|target|
@@ -193,93 +201,66 @@ def genTargets(datasetDir, outDir)
 
          # Corrupt the head and tail for each triple.
          for i in 0...numEntities
-            if (target[HEAD] != i)
-               corruption = target.clone()
-               corruption[HEAD] = i
-               corruptions << corruption
-            end
+            [HEAD, TAIL].each{|corruptionTarget|
+               # Note that we do not explicitly avoid the target itself.
 
-            if (target[TAIL] != i)
+               if (corruptionTarget == HEAD)
+                  id = "#{i}-#{target[TAIL]}-#{target[RELATION]}"
+               else
+                  id = "#{target[HEAD]}-#{i}-#{target[RELATION]}"
+               end
+
+               if (seenCorruptions.include?(id))
+                  next
+               end
+
+               seenCorruptions << id
+
                corruption = target.clone()
-               corruption[TAIL] = i
+               corruption[corruptionTarget] = i
+
+               ok, energy = energyMethod.call(
+                  entityEmbeddings[corruption[HEAD]],
+                  entityEmbeddings[corruption[TAIL]],
+                  relationEmbeddings[corruption[RELATION]],
+                  corruption[HEAD],
+                  corruption[TAIL],
+                  corruption[RELATION]
+               )
+
+               # Log for statistics.
+               energyHistogram[energy.round(2)] += 1
+
+               # Skip energies that are too high.
+               if (!ok)
+                  next
+               end
+
+               energies << [
+                  targetCount + corruptions.size(),
+                  # Only output 5 places to save space.
+                  "%6.5f" % energy
+               ]
+
                corruptions << corruption
-            end
+            }
          end
       }
 
       # Write out each relation's set of corruptions.
-      outFile.puts(corruptions.each_with_index().map{|corruption, i| "#{count + i}\t#{corruption.join("\t")}"}.join("\n"))
-      count += corruptions.size()
-
+      targetsOutFile.puts(corruptions.each_with_index().map{|corruption, i| "#{targetCount + i}\t#{corruption.join("\t")}"}.join("\n"))
+      targetCount += corruptions.size()
       corruptions.clear()
-      GC.start()
+      seenCorruptions.clear()
 
-      # TEST
-      if (count > 100)
-         break
-      end
-   }
-
-   outFile.close()
-end
-
-# Compute the energy for each target.
-def computeEnergies(embeddingDir, outDir, energyMethod)
-   if (File.exists?(File.join(outDir, ENERGY_FILE)))
-      return
-   end
-
-   entityEmbeddings, relationEmbeddings = loadEmbeddings(embeddingDir)
-
-   # [[id, energy], ...]
-   energies = []
-   outFile = File.open(File.join(outDir, ENERGY_FILE), 'w')
-
-   energyHistogram = Hash.new{|hash, key| hash[key] = 0}
-
-   # Note that the ids in the targets are indexes into the embeddings.
-   File.open(File.join(outDir, TARGETS_FILE), 'r'){|file|
-      file.each{|line|
-         parts = line.split("\t").map{|part| part.strip().to_i()}
-
-         # 1 offset for id.
-         ok, energy = energyMethod.call(
-            entityEmbeddings[parts[1 + HEAD]],
-            entityEmbeddings[parts[1 + TAIL]],
-            relationEmbeddings[parts[1 + RELATION]],
-            parts[1 + HEAD],
-            parts[1 + TAIL],
-            parts[1 + RELATION]
-         )
-
-         # Log for statistics.
-         energyHistogram[energy.round(2)] += 1
-
-         # Skip energies that are too high.
-         if (!ok)
-            next
-         end
-
-         energies << [
-            parts[0],
-            # Only output 5 places to save space.
-            "%6.5f" % energy
-         ]
-
-         # Batch to minimize memory usage.
-         if (energies.size() == 100000)
-            outFile.puts(energies.map{|energy| energy.join("\t")}.join("\n"))
-            energies.clear()
-         end
-      }
-   }
-
-   if (energies.size() != 0)
-      outFile.puts(energies.map{|energy| energy.join("\t")}.join("\n"))
+      energyOutFile.puts(energies.map{|energy| energy.join("\t")}.join("\n"))
       energies.clear()
-   end
 
-   outFile.close()
+      GC.start()
+   }
+
+   energyOutFile.close()
+   targetsOutFile.close()
 
    writeEnergyStats(energyHistogram, outDir)
 end
@@ -420,8 +401,7 @@ def prepForPSL(args)
 
    copyMappings(datasetDir, outDir)
    convertIds(datasetDir, outDir)
-   genTargetsEnerg(datasetDir, outDir)
-   computeEnergies(embeddingDir, outDir, energyMethod)
+   computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
 end
 
 if (__FILE__ == $0)

@@ -4,9 +4,9 @@ require 'etc'
 require 'fileutils'
 require 'open3'
 
+# gem install thread
 require 'thread/pool'
 
-# TEST: Need more memory
 NUM_THREADS = Etc.nprocessors - 1
 
 SEED = 4
