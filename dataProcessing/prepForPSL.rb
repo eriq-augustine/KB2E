@@ -5,18 +5,26 @@
 #  - List out all the possible targets (test triples and their corruptions).
 #  - Compute and output all the energy of all triples (targets).
 #
+# To save space (since there are typically > 400M targets), we will only write out energies
+# that are less than some threshold.
+# To signify an energy value that should not be included, the respective tripleEnergy() methods
+# will return first return a value of false and then the actual energy value.
+# We still return the actual energy so we can log it for later statistics.
+#
 # We make no strides to be overly efficient here, just keeping it simple.
+# We will check to see if a file exists before creating it and skip that step.
+# If you want a full re-run, just delete the offending directory.
 
 require 'fileutils'
 require 'set'
 
-require './distance'
 require './transE'
+require './transH'
 
-DEFAULT_DATASET_DIR = File.join('..', 'datasets', 'FB15k')
-DEFAULT_EMBEDDING_DIR = File.join('..', 'evaluationData', 'TransE_FB15k_[size:100,margin:1,method:1,rate:0.01,batches:100,epochs:1000,distance:1]')
-DEFAULT_OUT_DIR = File.join('.', File.basename(DEFAULT_EMBEDDING_DIR))
+DEFAULT_OUT_DIR = File.join('.', 'pslData')
+DATASETS_BASEDIR = File.join('..', 'datasets')
 
+WEIGHT_EMBEDDING_BASENAME = 'weights'
 ENTITY_EMBEDDING_BASENAME = 'entity2vec'
 RELATION_EMBEDDING_BASENAME = 'relation2vec'
 
@@ -31,6 +39,7 @@ VALID_FILE = 'valid.txt'
 
 TARGETS_FILE = 'targets.txt'
 ENERGY_FILE = 'energies.txt'
+ENERGY_STATS_FILE = 'energyStats.txt'
 
 HEAD = 0
 TAIL = 1
@@ -46,8 +55,13 @@ EMBEDDING_METHOD_TRANSE = 'TransE'
 EMBEDDING_METHOD_TRANSH = 'TransH'
 
 def copyMappings(datasetDir, outDir)
-   FileUtils.cp(File.join(datasetDir, ENTITY_ID_FILE), File.join(outDir, ENTITY_ID_FILE))
-   FileUtils.cp(File.join(datasetDir, RELATION_ID_FILE), File.join(outDir, RELATION_ID_FILE))
+   if (!File.exists?(File.join(outDir, ENTITY_ID_FILE)))
+      FileUtils.cp(File.join(datasetDir, ENTITY_ID_FILE), File.join(outDir, ENTITY_ID_FILE))
+   end
+
+   if (!File.exists?(File.join(outDir, RELATION_ID_FILE)))
+      FileUtils.cp(File.join(datasetDir, RELATION_ID_FILE), File.join(outDir, RELATION_ID_FILE))
+   end
 end
 
 def loadMapping(path)
@@ -78,6 +92,17 @@ def loadEmbeddingFile(path)
    }
 
    return embeddings
+end
+
+def loadWeights(embeddingDir)
+   # Check if we are workig with unif or bern.
+   if (File.exists?(File.join(embeddingDir, WEIGHT_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX)))
+      # Unif
+      return loadEmbeddingFile(File.join(embeddingDir, WEIGHT_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX))
+   else
+      # Bern
+      return loadEmbeddingFile(File.join(embeddingDir, WEIGHT_EMBEDDING_BASENAME + '.' + EMBEDDING_BERN_SUFFIX))
+   end
 end
 
 def loadEmbeddings(embeddingDir)
@@ -111,6 +136,10 @@ def loadIdTriples(path)
 end
 
 def convertIdFile(inPath, outPath, entityMapping, relationMapping)
+   if (File.exists?(outPath))
+      return
+   end
+
    triples = []
 
    File.open(inPath, 'r'){|file|
@@ -139,6 +168,10 @@ end
 
 # Make all the targets which include all the test triples and all their corruptions.
 def genTargets(datasetDir, outDir)
+   if (File.exists?(File.join(outDir, TARGETS_FILE)))
+      return
+   end
+
    targets = loadIdTriples(File.join(outDir, TEST_FILE))
    count = 0
 
@@ -180,6 +213,11 @@ def genTargets(datasetDir, outDir)
 
       corruptions.clear()
       GC.start()
+
+      # TEST
+      if (count > 100)
+         break
+      end
    }
 
    outFile.close()
@@ -187,11 +225,17 @@ end
 
 # Compute the energy for each target.
 def computeEnergies(embeddingDir, outDir, energyMethod)
+   if (File.exists?(File.join(outDir, ENERGY_FILE)))
+      return
+   end
+
    entityEmbeddings, relationEmbeddings = loadEmbeddings(embeddingDir)
 
    # [[id, energy], ...]
    energies = []
    outFile = File.open(File.join(outDir, ENERGY_FILE), 'w')
+
+   energyHistogram = Hash.new{|hash, key| hash[key] = 0}
 
    # Note that the ids in the targets are indexes into the embeddings.
    File.open(File.join(outDir, TARGETS_FILE), 'r'){|file|
@@ -199,22 +243,35 @@ def computeEnergies(embeddingDir, outDir, energyMethod)
          parts = line.split("\t").map{|part| part.strip().to_i()}
 
          # 1 offset for id.
+         ok, energy = energyMethod.call(
+            entityEmbeddings[parts[1 + HEAD]],
+            entityEmbeddings[parts[1 + TAIL]],
+            relationEmbeddings[parts[1 + RELATION]],
+            parts[1 + HEAD],
+            parts[1 + TAIL],
+            parts[1 + RELATION]
+         )
+
+         # Log for statistics.
+         energyHistogram[energy.round(2)] += 1
+
+         # Skip energies that are too high.
+         if (!ok)
+            next
+         end
+
          energies << [
             parts[0],
             # Only output 5 places to save space.
-            "%6.5f" % energyMethod.call(
-               entityEmbeddings[parts[1 + HEAD]],
-               entityEmbeddings[parts[1 + TAIL]],
-               relationEmbeddings[parts[1 + RELATION]]
-            )
+            "%6.5f" % energy
          ]
-      }
 
-      # Batch to minimize memory usage.
-      if (energies.size() != 0)
-         outFile.puts(energies.map{|energy| energy.join("\t")}.join("\n"))
-         energies.clear()
-      end
+         # Batch to minimize memory usage.
+         if (energies.size() == 100000)
+            outFile.puts(energies.map{|energy| energy.join("\t")}.join("\n"))
+            energies.clear()
+         end
+      }
    }
 
    if (energies.size() != 0)
@@ -223,40 +280,93 @@ def computeEnergies(embeddingDir, outDir, energyMethod)
    end
 
    outFile.close()
+
+   writeEnergyStats(energyHistogram, outDir)
+end
+
+def writeEnergyStats(energyHistogram, outDir)
+   tripleCount = energyHistogram.values().reduce(0, :+)
+   mean = energyHistogram.each_pair().map{|energy, count| energy * count}.reduce(0, :+) / tripleCount.to_f()
+   variance = energyHistogram.each_pair().map{|energy, count| count * ((energy - mean) ** 2)}.reduce(0, :+) / tripleCount.to_f()
+   stdDev = Math.sqrt(variance)
+   min = energyHistogram.keys().min()
+   max = energyHistogram.keys().max()
+   range = max - min
+
+   # Keep track of the counts in each quartile.
+   quartileCounts = [0, 0, 0, 0]
+   energyHistogram.each_pair().each{|energy, count|
+      # The small subtraction is to offset the max.
+      quartile = (((energy - min - 0.0000001).to_f() / range) * 100).to_i() / 25
+      quartileCounts[quartile] += count
+   }
+
+   # Calculate the median.
+   # HACK(eriq): This is slighty off if there is an even number of triples and the
+   # two median values are on a break, but it is not worth the extra effort.
+   median = -1
+   totalCount = 0
+   energyHistogram.each_pair().sort().each{|energy, count|
+      totalCount += count
+
+      if (totalCount >= (tripleCount / 2))
+         median = energy
+         break
+      end
+   }
+
+   File.open(File.join(outDir, ENERGY_STATS_FILE), 'w'){|file|
+      file.puts "Num Triples: #{energyHistogram.size()}"
+      file.puts "Num Unique Energies: #{tripleCount}"
+      file.puts "Min Energy: #{energyHistogram.keys().min()}"
+      file.puts "Max Energy: #{energyHistogram.keys().max()}"
+      file.puts "Quartile Counts: #{quartileCounts}"
+      file.puts "Quartile Percentages: #{quartileCounts.map{|count| (count / tripleCount.to_f()).round(2)}}"
+      file.puts "Mean Energy: #{mean}"
+      file.puts "Median Energy: #{median}"
+      file.puts "Energy Variance: #{variance}"
+      file.puts "Energy StdDev: #{stdDev}"
+      file.puts "---"
+      file.puts energyHistogram.each_pair().sort().map{|pair| pair.join("\t")}.join("\n")
+   }
 end
 
 def parseArgs(args)
-   datasetDir = DEFAULT_DATASET_DIR
-   embeddingDir = DEFAULT_EMBEDDING_DIR
-   outDir = DEFAULT_OUT_DIR
-
+   embeddingDir = nil
+   outDir = nil
+   datasetDir = nil
    embeddingMethod = nil
    distanceType = nil
 
-   if (args.size() > 3 || args.map{|arg| arg.downcase().gsub('-', '')}.include?('help'))
-      puts "USAGE: ruby #{$0} [dataset dir [embedding dir [output dir [embedding method [distance type]]]]]"
+   if (args.size() < 1 || args.size() > 5 || args.map{|arg| arg.downcase().gsub('-', '')}.include?('help'))
+      puts "USAGE: ruby #{$0} embedding dir [output dir [dataset dir [embedding method [distance type]]]]"
       puts "Defaults:"
-      puts "   dataset dir = #{DEFAULT_DATASET_DIR}"
-      puts "   embedding dir = #{DEFAULT_EMBEDDING_DIR}"
-      puts "   output dir = #{DEFAULT_OUT_DIR}"
+      puts "   output dir = inferred"
+      puts "   dataset dir = inferred"
       puts "   embedding method = inferred"
       puts "   distance type = inferred"
       puts ""
-      puts "Inferring the embedding method and distance type relies on the emebedding directory"
+      puts "All the inferred aguments relies on the emebedding directory"
       puts "being formatted by the evalAll.rb script."
+      puts "The directory that the inferred output directory will be put in is: #{DEFAULT_OUT_DIR}."
       exit(2)
    end
 
    if (args.size() > 0)
-      datasetDir = args[0]
+      embeddingDir = args[0]
    end
 
    if (args.size() > 1)
-      embeddingDir = args[1]
+      outDir = args[1]
+   else
+      outDir = File.join(DEFAULT_OUT_DIR, File.basename(embeddingDir))
    end
 
    if (args.size() > 2)
-      outDir = args[2]
+      datasetDir = args[2]
+   else
+      dataset = File.basename(embeddingDir).match(/^[^_]+_([^\[]+)_\[/)[1]
+      datasetDir = File.join(DATASETS_BASEDIR, File.join(dataset))
    end
 
    if (args.size() > 3)
@@ -276,44 +386,44 @@ def parseArgs(args)
       end
    end
 
-   energyMethod = getEnergyMethod(embeddingMethod, distanceType)
+   energyMethod = getEnergyMethod(embeddingMethod, distanceType, embeddingDir)
 
    return datasetDir, embeddingDir, outDir, energyMethod
 end
 
 # Given an embedding method and distance type, return a proc that will compute the energy.
-def getEnergyMethod(embeddingMethod, distanceType)
-   distanceProc = nil
-   case distanceType
-   when L1_DISTANCE_STRING
-      distanceProc = proc{|head, tail, relation| Distance.l1(head, tail, relation)}
-   when L2_DISTANCE_STRING
-      distanceProc = proc{|head, tail, relation| Distance.l2(head, tail, relation)}
-   else
-      $stderr.puts("Unknown distance type: #{distanceType}")
-      exit(3)
+def getEnergyMethod(embeddingMethod, distanceType, embeddingDir)
+   if (![L1_DISTANCE_STRING, L2_DISTANCE_STRING].include?(distanceType))
+      raise("Unknown distance type: #{distanceType}")
    end
 
    case embeddingMethod
    when EMBEDDING_METHOD_TRANSE
-      return proc{|head, tail, relation| TransE.tripleEnergy(distanceProc, head, tail, relation)}
+      return proc{|head, tail, relation, headId, tailId, relationId|
+         TransE.tripleEnergy(distanceType, head, tail, relation)
+      }
+   when EMBEDDING_METHOD_TRANSH
+      transHWeights = loadWeights(embeddingDir)
+      return proc{|head, tail, relation, headId, tailId, relationId|
+         TransH.tripleEnergy(head, tail, relation, transHWeights[relationId])
+      }
    else
       $stderr.puts("Unknown embedding method: #{embeddingMethod}")
       exit(4)
    end
 end
 
-def main(args)
+def prepForPSL(args)
    datasetDir, embeddingDir, outDir, energyMethod = parseArgs(args)
 
    FileUtils.mkdir_p(outDir)
 
    copyMappings(datasetDir, outDir)
    convertIds(datasetDir, outDir)
-   genTargets(datasetDir, outDir)
+   genTargetsEnerg(datasetDir, outDir)
    computeEnergies(embeddingDir, outDir, energyMethod)
 end
 
 if (__FILE__ == $0)
-   main(ARGV)
+   prepForPSL(ARGV)
 end
