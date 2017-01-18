@@ -91,7 +91,10 @@ void Trainer::prepTrain() {
    FILE* entitySeedFile = fopen(path.c_str(), "r");
    for (int i = 0; i < numEntities_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
-         fscanf(entitySeedFile, "%lf", &entityVec_[i][j]);
+         if (fscanf(entitySeedFile, "%lf", &entityVec_[i][j]) != 1) {
+            printf("Failed to read embedding values from seed file: '%s'\n", path.c_str());
+            exit(1);
+         }
       }
       common::norm(entityVec_[i], false);
    }
@@ -101,7 +104,10 @@ void Trainer::prepTrain() {
    FILE* relationSeedFile = fopen(path.c_str(), "r");
    for (int i = 0; i < numRelations_; i++) {
       for (int j = 0; j < embeddingSize_; j++) {
-         fscanf(relationSeedFile, "%lf", &relationVec_[i][j]);
+         if (fscanf(relationSeedFile, "%lf", &relationVec_[i][j]) != 1) {
+            printf("Failed to read embedding values from seed file: '%s'\n", path.c_str());
+            exit(1);
+        }
       }
    }
    fclose(relationSeedFile);

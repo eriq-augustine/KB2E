@@ -49,7 +49,10 @@ void Evaluation::loadEmbeddings() {
          weights_[i][j].resize(embeddingSize_);
 
          for (int k = 0; k < embeddingSize_; k++) {
-            fscanf(weightEmbeddingFile, "%lf", &weights_[i][j][k]);
+            if (fscanf(weightEmbeddingFile, "%lf", &weights_[i][j][k]) != 1) {
+               printf("Failed to read embedding weight values from seed file: '%s'\n", weightEmbeddingPath.c_str());
+               exit(1);
+            }
          }
       }
    }
