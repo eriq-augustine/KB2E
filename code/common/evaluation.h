@@ -46,9 +46,9 @@ class EmbeddingEvaluation {
 
       void add(int head, int tail, int relation, bool addToWorkingSet);
       void evalCorruption(int head, int tail, int relation, bool corruptHead,
-                          int* rawSumActualRank, int* filteredSumActualRank,
+                          int* rawSumRank, int* filteredSumRank,
                           int* rawHitsIn10, int* filteredHitsIn10,
-                          std::vector<std::pair<int, double>>& tripleEnergies);
+                          std::vector<double>& tripleEnergies);
 
       void loadTriples();
 

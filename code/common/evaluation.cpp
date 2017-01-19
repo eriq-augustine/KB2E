@@ -16,10 +16,6 @@
 
 namespace common {
 
-double cmp(std::pair<int, double> a, std::pair<int, double> b) {
-   return a.second < b.second;
-}
-
 EmbeddingEvaluation::EmbeddingEvaluation(EmbeddingArguments args) {
    dataDir_ = args.dataDir;
    embeddingSize_ = args.embeddingSize;
@@ -117,53 +113,52 @@ double EmbeddingEvaluation::cachedTripleEnergy(int head, int tail, int relation)
 // If |corruptHead| is true, corrupt the head. Otherwise, corrupt the tail.
 // |tripleEnergies| will already be allocated and will probably have old data in it.
 void EmbeddingEvaluation::evalCorruption(int head, int tail, int relation, bool corruptHead,
-                                         int* rawSumActualRank, int* filteredSumActualRank,
+                                         int* rawSumRank, int* filteredSumRank,
                                          int* rawHitsIn10, int* filteredHitsIn10,
-                                         std::vector<std::pair<int, double>>& tripleEnergies) {
+                                         std::vector<double>& tripleEnergies) {
    // Recall that we want to do self replacement as well, ie. we want the score for the real triple.
    for (int i = 0; i < numEntities_; i++) {
       if (corruptHead) {
-         tripleEnergies[i] = std::make_pair(i, cachedTripleEnergy(i, tail, relation));
+         tripleEnergies[i] = cachedTripleEnergy(i, tail, relation);
       } else {
-         tripleEnergies[i] = std::make_pair(i, cachedTripleEnergy(head, i, relation));
+         tripleEnergies[i] = cachedTripleEnergy(head, i, relation);
       }
    }
 
    // Sort in ascending order by energy.
-   sort(tripleEnergies.begin(), tripleEnergies.end(), cmp);
+   sort(tripleEnergies.begin(), tripleEnergies.end());
 
-   int rawRank = 0;
-   int filteredRank = 0;
+   int rawRank = 1;
+   int filteredRank = 1;
 
    for (int i = 0; i < tripleEnergies.size(); i++) {
       int currentHead;
       int currentTail;
 
       if (corruptHead) {
-         currentHead = tripleEnergies[i].first;
+         currentHead = i;
          currentTail = tail;
       } else {
          currentHead = head;
-         currentTail = tripleEnergies[i].first;
-      }
-
-      if (triples_[std::make_pair(currentHead, relation)].count(currentTail) == 0) {
-         filteredRank++;
+         currentTail = i;
       }
 
       if (currentHead == head && currentTail == tail) {
          // Note that we start our ranks at 1, not zero.
          rawRank = i + 1;
-         filteredRank++;
          break;
+      }
+
+      if (triples_[std::make_pair(currentHead, relation)].count(currentTail) == 0) {
+         filteredRank++;
       }
    }
 
    assert(rawRank > 0);
    assert(filteredRank > 0);
 
-   *rawSumActualRank += rawRank;
-   *filteredSumActualRank += filteredRank;
+   *rawSumRank += rawRank;
+   *filteredSumRank += filteredRank;
 
    if (rawRank <= 10) {
       (*rawHitsIn10)++;
@@ -184,8 +179,8 @@ void EmbeddingEvaluation::run() {
    int filteredHitsIn10 = 0;
 
    // The sum of the ranks the real triples were put at.
-   int rawSumActualRank = 0;
-   int filteredSumActualRank = 0;
+   int rawSumRank = 0;
+   int filteredSumRank = 0;
 
    // Prep the cache.
    int cacheSize = numEntities_ * numEntities_;
@@ -194,8 +189,10 @@ void EmbeddingEvaluation::run() {
    // Allocate the vector that will be cached to avoid reallocation.
    // The energies of all permutation of this triple.
    // The first in the pair is what we are using to corrupt.
-   std::vector<std::pair<int, double>> tripleEnergies;
+   std::vector<double> tripleEnergies;
    tripleEnergies.resize(numEntities_);
+
+   int computedCount = 0;
 
    // To speed up evaluation, we are going to be caching energy results.
    // However, in most cases, there are too many combinations to cache (around 300 billion for FB15k).
@@ -218,21 +215,26 @@ void EmbeddingEvaluation::run() {
          int relation = relations_[tripleId];
 
          evalCorruption(head, tail, relation, true,
-                        &rawSumActualRank, &filteredSumActualRank,
+                        &rawSumRank, &filteredSumRank,
                         &rawHitsIn10, &filteredHitsIn10,
                         tripleEnergies);
 
          evalCorruption(head, tail, relation, false,
-                        &rawSumActualRank, &filteredSumActualRank,
+                        &rawSumRank, &filteredSumRank,
                         &rawHitsIn10, &filteredHitsIn10,
                         tripleEnergies);
+
+         computedCount++;
       }
+
+      printf("\rProcessed %05.2f%% ...", computedCount * 100.0 / heads_.size());
    }
+   printf("\n");
 
    double numberCorruptions = heads_.size() * 2;
 
-   printf("Raw      -- Rank: %f, Hits@10: %f\n", rawSumActualRank / numberCorruptions, rawHitsIn10 / numberCorruptions);
-   printf("Filtered -- Rank: %f, Hits@10: %f\n", filteredSumActualRank / numberCorruptions, filteredHitsIn10 / numberCorruptions);
+   printf("Raw      -- Rank: %f, Hits@10: %f\n", rawSumRank / numberCorruptions, rawHitsIn10 / numberCorruptions);
+   printf("Filtered -- Rank: %f, Hits@10: %f\n", filteredSumRank / numberCorruptions, filteredHitsIn10 / numberCorruptions);
 }
 
 void EmbeddingEvaluation::prepare() {
