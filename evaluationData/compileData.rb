@@ -1,5 +1,5 @@
 EVAL_FILENAME = 'eval.txt'
-BASE_DIR = '.'
+BASE_DIR = 'results'
 
 DELIMITER = "\t"
 
@@ -40,13 +40,13 @@ def getResults(dir)
 
             results[:options] = options
          elsif (line.start_with?('Raw'))
-            match = line.match(/Rank: (\d+(:?\.\d+)?), Hits@10: (\d(:?\.\d+))/)
+            match = line.match(/Rank: (\d+(?:\.\d+)?), Hits@10: (\d(?:\.\d+))/)
             results[:raw] = {
                :rank => match[1].to_f(),
                :hitsAt10 => match[2].to_f()
             }
          elsif (line.start_with?('Filtered'))
-            match = line.match(/Rank: (\d+(:?\.\d+)?), Hits@10: (\d(:?\.\d+))/)
+            match = line.match(/Rank: (\d+(?:\.\d+)?), Hits@10: (\d(?:\.\d+))/)
             results[:filtered] = {
                :rank => match[1].to_f(),
                :hitsAt10 => match[2].to_f()
