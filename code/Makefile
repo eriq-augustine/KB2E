@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-O3 -I.
+CFLAGS=-O3 -std=c++11 -I.
 
 ARCHIVE=ar
 ARCHIVE_FLAGS=-rcs

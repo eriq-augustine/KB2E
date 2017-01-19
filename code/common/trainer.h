@@ -33,8 +33,8 @@ class Trainer {
       std::string dataDir_;
       std::string outputDir_;
 
-      std::vector<std::vector<double>> relationVec_;
-      std::vector<std::vector<double>> entityVec_;
+      std::vector<std::vector<double> > relationVec_;
+      std::vector<std::vector<double> > entityVec_;
 
       int numRelations_;
       int numEntities_;

@@ -75,7 +75,10 @@ void EmbeddingEvaluation::loadEmbeddings() {
    for (int i = 0; i < numRelations_; i++) {
       relationVec_[i].resize(embeddingSize_);
       for (int j = 0; j < embeddingSize_; j++) {
-         fscanf(relationEmbeddingFile, "%lf", &relationVec_[i][j]);
+         if (fscanf(relationEmbeddingFile, "%lf", &relationVec_[i][j]) != 1) {
+            printf("Failed to read embedding values from file: '%s'\n", relationEmbeddingPath_.c_str());
+            exit(1);
+         }
       }
    }
    fclose(relationEmbeddingFile);
@@ -85,7 +88,10 @@ void EmbeddingEvaluation::loadEmbeddings() {
    for (int i = 0; i < numEntities_; i++) {
       entityVec_[i].resize(embeddingSize_);
       for (int j = 0; j < embeddingSize_; j++) {
-         fscanf(entityEmbeddingFile, "%lf", &entityVec_[i][j]);
+         if (fscanf(entityEmbeddingFile, "%lf", &entityVec_[i][j]) != 1) {
+            printf("Failed to read embedding values from file: '%s'\n", entityEmbeddingPath_.c_str());
+            exit(1);
+         }
       }
 
       // TODO(eriq): I don't know what this check it.
