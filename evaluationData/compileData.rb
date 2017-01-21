@@ -15,6 +15,8 @@ def getResults(dir)
       results[:model] = File.basename(dir).match(/^([^_]+)_/)[1]
 
       file.each{|line|
+         line.strip!()
+
          if (line.start_with?('Options: '))
             # ["key: value", ...]
             options = line.sub(/Options: \[(.+)\]$/, '\1').split(', ')
@@ -51,6 +53,9 @@ def getResults(dir)
                :rank => match[1].to_f(),
                :hitsAt10 => match[2].to_f()
             }
+         elsif (line.start_with?("Processed"))
+            # Skip
+            next
          else
             $stderr.puts("Unknown line pattern: [#{line}].")
          end
