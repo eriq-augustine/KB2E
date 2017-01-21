@@ -27,6 +27,9 @@ require './transE'
 require './transH'
 
 NUM_THREADS = Etc.nprocessors - 2
+SKIP_BAD_ENERGY = false
+MIN_WORK_PER_THREAD = 50
+WORK_DONE_MSG = '__DONE__'
 
 DEFAULT_OUT_DIR = File.join('.', 'pslData')
 DATASETS_BASEDIR = File.join('..', 'datasets')
@@ -206,7 +209,14 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
 
    relations.each{|relation|
       validTargets = targets.select(){|target| target[RELATION] == relation}
-      validTargets.each_slice(validTargets.size() / NUM_THREADS + 1){|threadTargets|
+
+      # Keep track of how many actual threads are used.
+      # If validTargets is small enough, then we will use less than the standard number of threads.
+      numActiveThreads = 0
+
+      validTargets.each_slice([validTargets.size() / NUM_THREADS + 1, MIN_WORK_PER_THREAD].max()){|threadTargets|
+         numActiveThreads += 1
+
          pool.process{
             threadTargets.each{|target|
                # Corrupt the head and tail for each triple.
@@ -220,42 +230,54 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
                         id = "#{target[HEAD]}-#{i}-#{target[RELATION]}"
                      end
 
-                     if (seenCorruptions.include?(id))
-                        next
-                     end
-
+                     # Note that we can do next inside of this sync block,
+                     # because we need it to next the outer block.
+                     skip = false
                      lock.synchronize {
+                        if (seenCorruptions.include?(id))
+                           skip = true
+                        end
+
                         seenCorruptions << id
                      }
 
-                     corruption = target.clone()
-                     corruption[corruptionTarget] = i
+                     if (skip)
+                        next
+                     end
+
+                     if (corruptionTarget == HEAD)
+                        head = i
+                        tail = target[TAIL]
+                     else
+                        head = target[HEAD]
+                        tail = i
+                     end
 
                      ok, energy = energyMethod.call(
-                        entityEmbeddings[corruption[HEAD]],
-                        entityEmbeddings[corruption[TAIL]],
-                        relationEmbeddings[corruption[RELATION]],
-                        corruption[HEAD],
-                        corruption[TAIL],
-                        corruption[RELATION]
+                        entityEmbeddings[head],
+                        entityEmbeddings[tail],
+                        relationEmbeddings[target[RELATION]],
+                        head,
+                        tail,
+                        target[RELATION]
                      )
 
-                     channel.send([ok, energy, corruption])
+                     channel.send([ok, energy, [head, tail, target[RELATION]]])
                   }
                end
             }
 
             # Send a nil when the thread is finished.
-            channel.send(nil)
+            channel.send(WORK_DONE_MSG)
          }
       }
 
       doneThreads = 0
       while (msg = channel.receive())
-         if (msg == nil)
+         if (msg == WORK_DONE_MSG)
             doneThreads += 1
 
-            if (doneThreads == NUM_THREADS)
+            if (doneThreads == numActiveThreads)
                break
             end
          else
@@ -265,7 +287,7 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
             energyHistogram[energy.round(2)] += 1
 
             # Skip energies that are too high.
-            if (ok)
+            if (!SKIP_BAD_ENERGY || ok)
                energies << [
                   targetCount + corruptions.size(),
                   # Only output 5 places to save space.
