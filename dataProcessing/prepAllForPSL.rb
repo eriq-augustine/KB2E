@@ -9,12 +9,13 @@ require 'thread/pool'
 
 require './prepForPSL.rb'
 
-NUM_THREADS = Etc.nprocessors - 1
+# NUM_JOBS = Etc.nprocessors - 1
+NUM_JOBS = 1
 
 DEFAULT_DATA_DIR = File.join('..', 'evaluationData', 'results')
 
 def prepAll(dataDir)
-   pool = Thread.pool(NUM_THREADS)
+   pool = Thread.pool(NUM_JOBS)
 
    Dir.entries(dataDir).sort().each{|dir|
       if (['.', '..'].include?(dir))
@@ -25,7 +26,7 @@ def prepAll(dataDir)
 
       pool.process{
          begin
-            puts path
+            puts "Prepping: #{path}"
             prepForPSL([path])
          rescue Exception => ex
             puts "Failed to prep #{path}"
@@ -35,6 +36,7 @@ def prepAll(dataDir)
       }
    }
 
+   pool.wait()
    pool.shutdown()
 end
 

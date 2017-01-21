@@ -15,11 +15,18 @@
 # We will check to see if a file exists before creating it and skip that step.
 # If you want a full re-run, just delete the offending directory.
 
+require 'etc'
 require 'fileutils'
 require 'set'
 
+# gem install thread
+require 'thread/channel'
+require 'thread/pool'
+
 require './transE'
 require './transH'
+
+NUM_THREADS = Etc.nprocessors - 2
 
 DEFAULT_OUT_DIR = File.join('.', 'pslData')
 DATASETS_BASEDIR = File.join('..', 'datasets')
@@ -193,49 +200,72 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
    # {energy.round(2) => count, ...}
    energyHistogram = Hash.new{|hash, key| hash[key] = 0}
 
+   pool = Thread.pool(NUM_THREADS)
+   lock = Mutex.new()
+   channel = Thread.channel()
+
    relations.each{|relation|
-      targets.each{|target|
-         if (target[RELATION] != relation)
-            next
-         end
+      validTargets = targets.select(){|target| target[RELATION] == relation}
+      validTargets.each_slice(validTargets.size() / NUM_THREADS + 1){|threadTargets|
+         pool.process{
+            threadTargets.each{|target|
+               # Corrupt the head and tail for each triple.
+               for i in 0...numEntities
+                  [HEAD, TAIL].each{|corruptionTarget|
+                     # Note that we do not explicitly avoid the target itself.
 
-         # Corrupt the head and tail for each triple.
-         for i in 0...numEntities
-            [HEAD, TAIL].each{|corruptionTarget|
-               # Note that we do not explicitly avoid the target itself.
+                     if (corruptionTarget == HEAD)
+                        id = "#{i}-#{target[TAIL]}-#{target[RELATION]}"
+                     else
+                        id = "#{target[HEAD]}-#{i}-#{target[RELATION]}"
+                     end
 
-               if (corruptionTarget == HEAD)
-                  id = "#{i}-#{target[TAIL]}-#{target[RELATION]}"
-               else
-                  id = "#{target[HEAD]}-#{i}-#{target[RELATION]}"
+                     if (seenCorruptions.include?(id))
+                        next
+                     end
+
+                     lock.synchronize {
+                        seenCorruptions << id
+                     }
+
+                     corruption = target.clone()
+                     corruption[corruptionTarget] = i
+
+                     ok, energy = energyMethod.call(
+                        entityEmbeddings[corruption[HEAD]],
+                        entityEmbeddings[corruption[TAIL]],
+                        relationEmbeddings[corruption[RELATION]],
+                        corruption[HEAD],
+                        corruption[TAIL],
+                        corruption[RELATION]
+                     )
+
+                     channel.send([ok, energy, corruption])
+                  }
                end
+            }
 
-               if (seenCorruptions.include?(id))
-                  next
-               end
+            # Send a nil when the thread is finished.
+            channel.send(nil)
+         }
+      }
 
-               seenCorruptions << id
+      doneThreads = 0
+      while (msg = channel.receive())
+         if (msg == nil)
+            doneThreads += 1
 
-               corruption = target.clone()
-               corruption[corruptionTarget] = i
+            if (doneThreads == NUM_THREADS)
+               break
+            end
+         else
+            ok, energy, corruption = msg
 
-               ok, energy = energyMethod.call(
-                  entityEmbeddings[corruption[HEAD]],
-                  entityEmbeddings[corruption[TAIL]],
-                  relationEmbeddings[corruption[RELATION]],
-                  corruption[HEAD],
-                  corruption[TAIL],
-                  corruption[RELATION]
-               )
+            # Log for statistics.
+            energyHistogram[energy.round(2)] += 1
 
-               # Log for statistics.
-               energyHistogram[energy.round(2)] += 1
-
-               # Skip energies that are too high.
-               if (!ok)
-                  next
-               end
-
+            # Skip energies that are too high.
+            if (ok)
                energies << [
                   targetCount + corruptions.size(),
                   # Only output 5 places to save space.
@@ -243,9 +273,11 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
                ]
 
                corruptions << corruption
-            }
+            end
          end
-      }
+      end
+
+      pool.wait()
 
       # Write out each relation's set of corruptions.
       targetsOutFile.puts(corruptions.each_with_index().map{|corruption, i| "#{targetCount + i}\t#{corruption.join("\t")}"}.join("\n"))
@@ -258,6 +290,8 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
 
       GC.start()
    }
+
+   pool.shutdown()
 
    energyOutFile.close()
    targetsOutFile.close()
@@ -346,7 +380,7 @@ def parseArgs(args)
    if (args.size() > 2)
       datasetDir = args[2]
    else
-      dataset = File.basename(embeddingDir).match(/^[^_]+_([^\[]+)_\[/)[1]
+      dataset = File.basename(embeddingDir).match(/^[^_]+_(\S+)_\[size:/)[1]
       datasetDir = File.join(DATASETS_BASEDIR, File.join(dataset))
    end
 
