@@ -26,12 +26,14 @@ require 'thread/pool'
 require './transE'
 require './transH'
 
-NUM_THREADS = Etc.nprocessors - 2
+NUM_THREADS = Etc.nprocessors - 1
 SKIP_BAD_ENERGY = false
 MIN_WORK_PER_THREAD = 50
 WORK_DONE_MSG = '__DONE__'
 
-DEFAULT_OUT_DIR = File.join('.', 'pslData')
+# TEST
+# DEFAULT_OUT_DIR = File.join('.', 'pslData')
+DEFAULT_OUT_DIR = File.join('/', 'media', 'temp', 'temp')
 DATASETS_BASEDIR = File.join('..', 'datasets')
 
 WEIGHT_EMBEDDING_BASENAME = 'weights'
