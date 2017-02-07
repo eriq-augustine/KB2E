@@ -19,13 +19,14 @@ ruby parseNell.rb "${NELL_FILE}"
 echo "Inserting ..."
 echo "   Entities ..."
 psql nell <  sql/insert/entities.sql
+echo "   Entity Categories ..."
+psql nell <  sql/insert/categories.sql
 echo "   Relations ..."
 psql nell <  sql/insert/relations.sql
 echo "   Triples ..."
 psql nell <  sql/insert/triples.sql
 
 # psql nell <  sql/insert/literals.sql
-# psql nell <  sql/insert/categories.sql
 
 echo "Optimizing ..."
 psql nell < sql/optimize.sql

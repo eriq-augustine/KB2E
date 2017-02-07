@@ -8,7 +8,7 @@ require 'uri'
 
 SKIP_FIRST_LINE = true
 
-# Batch the inserts to we don't run out of memory.
+# Batch the inserts so we don't run out of memory.
 PAGE_SIZE = 10000
 
 INSERT_DIR = File.join('sql', 'insert')
@@ -222,13 +222,13 @@ def parseFile(path)
    removeOldFiles()
 
    fetchValues(path){|rawRows|
-      parseEntities(path, rawRows)
-      parseRelations(path, rawRows)
-      parseTriples(path, rawRows)
+      # parseEntities(path, rawRows)
+      # parseRelations(path, rawRows)
+      # parseTriples(path, rawRows)
+      parseCategories(path, rawRows)
 
-      # No one is actually using these currently.
+      # No one is actually using this currently.
       # parseLiterals(path, rawRows)
-      # parseCategories(path, rawRows)
    }
 end
 

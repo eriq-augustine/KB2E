@@ -50,10 +50,10 @@ CREATE INDEX IX_Triples_head ON Triples (head);
 CREATE INDEX IX_Triples_relation ON Triples (relation);
 CREATE INDEX IX_Triples_tail ON Triples (tail);
 CREATE INDEX IX_Entities_isConcept_id ON Entities (isConcept, id);
+CREATE INDEX IX_EntityCategories_entityId ON EntityCategories (entityId);
 
--- Enable if we start using literals or categories.
+-- Enable if we start using literals.
 -- CREATE INDEX IX_EntityLiteralStrings_entityId ON EntityLiteralStrings (entityId);
--- CREATE INDEX IX_EntityCategories_entityId ON EntityCategories (entityId);
 
 -- Support table
 
