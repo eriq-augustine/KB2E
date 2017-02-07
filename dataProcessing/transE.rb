@@ -1,4 +1,4 @@
-require './distance'
+require_relative 'distance'
 
 module TransE
    L1_DISTANCE_STRING = 'L1'

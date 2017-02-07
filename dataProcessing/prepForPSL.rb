@@ -23,8 +23,7 @@ require 'set'
 require 'thread/channel'
 require 'thread/pool'
 
-require './transE'
-require './transH'
+require_relative 'embeddings'
 
 NUM_THREADS = Etc.nprocessors - 1
 SKIP_BAD_ENERGY = false
@@ -36,15 +35,6 @@ WORK_DONE_MSG = '__DONE__'
 DEFAULT_OUT_DIR = File.join('/', 'media', 'temp', 'temp')
 DATASETS_BASEDIR = File.join('..', 'datasets')
 
-WEIGHT_EMBEDDING_BASENAME = 'weights'
-ENTITY_EMBEDDING_BASENAME = 'entity2vec'
-RELATION_EMBEDDING_BASENAME = 'relation2vec'
-
-EMBEDDING_UNIF_SUFFIX = 'unif'
-EMBEDDING_BERN_SUFFIX = 'bern'
-
-ENTITY_ID_FILE = 'entity2id.txt'
-RELATION_ID_FILE = 'relation2id.txt'
 TEST_FILE = 'test.txt'
 TRAIN_FILE = 'train.txt'
 VALID_FILE = 'valid.txt'
@@ -60,79 +50,14 @@ RELATION = 2
 L1_DISTANCE = 0
 L2_DISTANCE = 1
 
-L1_DISTANCE_STRING = 'L1'
-L2_DISTANCE_STRING = 'L2'
-
-EMBEDDING_METHOD_TRANSE = 'TransE'
-EMBEDDING_METHOD_TRANSH = 'TransH'
-
 def copyMappings(datasetDir, outDir)
-   if (!File.exists?(File.join(outDir, ENTITY_ID_FILE)))
-      FileUtils.cp(File.join(datasetDir, ENTITY_ID_FILE), File.join(outDir, ENTITY_ID_FILE))
+   if (!File.exists?(File.join(outDir, Embeddings::ENTITY_ID_FILE)))
+      FileUtils.cp(File.join(datasetDir, Embeddings::ENTITY_ID_FILE), File.join(outDir, Embeddings::ENTITY_ID_FILE))
    end
 
-   if (!File.exists?(File.join(outDir, RELATION_ID_FILE)))
-      FileUtils.cp(File.join(datasetDir, RELATION_ID_FILE), File.join(outDir, RELATION_ID_FILE))
+   if (!File.exists?(File.join(outDir, Embeddings::RELATION_ID_FILE)))
+      FileUtils.cp(File.join(datasetDir, Embeddings::RELATION_ID_FILE), File.join(outDir, Embeddings::RELATION_ID_FILE))
    end
-end
-
-def loadMapping(path)
-   mapping = {}
-   File.open(path, 'r'){|file|
-      file.each{|line|
-         parts = line.split("\t").map{|part| part.strip()}
-         mapping[parts[0]] = parts[1]
-      }
-   }
-   return mapping
-end
-
-def loadMappings(datasetDir)
-   entityMapping = loadMapping(File.join(datasetDir, ENTITY_ID_FILE))
-   relationMapping = loadMapping(File.join(datasetDir, RELATION_ID_FILE))
-   return entityMapping, relationMapping
-end
-
-# Note: The if of the entity/relation is the line index in the file.
-def loadEmbeddingFile(path)
-   embeddings = []
-
-   File.open(path, 'r'){|file|
-      file.each{|line|
-         embeddings << line.split("\t").map{|part| part.strip().to_f()}
-      }
-   }
-
-   return embeddings
-end
-
-def loadWeights(embeddingDir)
-   # Check if we are workig with unif or bern.
-   if (File.exists?(File.join(embeddingDir, WEIGHT_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX)))
-      # Unif
-      return loadEmbeddingFile(File.join(embeddingDir, WEIGHT_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX))
-   else
-      # Bern
-      return loadEmbeddingFile(File.join(embeddingDir, WEIGHT_EMBEDDING_BASENAME + '.' + EMBEDDING_BERN_SUFFIX))
-   end
-end
-
-def loadEmbeddings(embeddingDir)
-   # Check if we are workig with unif or bern.
-   if (File.exists?(File.join(embeddingDir, ENTITY_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX)))
-      # Unif
-      entityPath = File.join(embeddingDir, ENTITY_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX)
-      relationPath = File.join(embeddingDir, RELATION_EMBEDDING_BASENAME + '.' + EMBEDDING_UNIF_SUFFIX)
-   else
-      # Bern
-      entityPath = File.join(embeddingDir, ENTITY_EMBEDDING_BASENAME + '.' + EMBEDDING_BERN_SUFFIX)
-      relationPath = File.join(embeddingDir, RELATION_EMBEDDING_BASENAME + '.' + EMBEDDING_BERN_SUFFIX)
-   end
-
-   entityEmbeddings = loadEmbeddingFile(entityPath)
-   relationEmbeddings = loadEmbeddingFile(relationPath)
-
-   return entityEmbeddings, relationEmbeddings
 end
 
 def loadIdTriples(path)
@@ -172,7 +97,7 @@ def convertIdFile(inPath, outPath, entityMapping, relationMapping)
 end
 
 def convertIds(datasetDir, outDir)
-   entityMapping, relationMapping = loadMappings(datasetDir)
+   entityMapping, relationMapping = Embeddings.loadMappings(datasetDir)
    convertIdFile(File.join(datasetDir, TEST_FILE), File.join(outDir, TEST_FILE), entityMapping, relationMapping)
    convertIdFile(File.join(datasetDir, TRAIN_FILE), File.join(outDir, TRAIN_FILE), entityMapping, relationMapping)
    convertIdFile(File.join(datasetDir, VALID_FILE), File.join(outDir, VALID_FILE), entityMapping, relationMapping)
@@ -189,7 +114,7 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
    targetsOutFile = File.open(File.join(outDir, TARGETS_FILE), 'w')
    energyOutFile = File.open(File.join(outDir, ENERGY_FILE), 'w')
 
-   entityEmbeddings, relationEmbeddings = loadEmbeddings(embeddingDir)
+   entityEmbeddings, relationEmbeddings = Embeddings.loadEmbeddings(embeddingDir)
    targets = loadIdTriples(File.join(outDir, TEST_FILE))
 
    targetCount = 0
@@ -198,7 +123,7 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
 
    # To reduce memory consumption, we will only look at one relation at a time.
    relations = targets.map{|target| target[RELATION]}.uniq()
-   numEntities = loadMapping(File.join(datasetDir, ENTITY_ID_FILE)).size()
+   numEntities = Embeddings.loadMapping(File.join(datasetDir, Embeddings::ENTITY_ID_FILE)).size()
 
    # [[id, energy], ...]
    energies = []
@@ -232,7 +157,7 @@ def computeTargetEnergies(datasetDir, embeddingDir, outDir, energyMethod)
                         id = "#{target[HEAD]}-#{i}-#{target[RELATION]}"
                      end
 
-                     # Note that we can do next inside of this sync block,
+                     # Note that we can't do next inside of this sync block,
                      # because we need it to next the outer block.
                      skip = false
                      lock.synchronize {
@@ -419,37 +344,15 @@ def parseArgs(args)
    else
       # TODO(eriq): This may be a little off for TransR.
       if (embeddingDir.include?("distance:#{L1_DISTANCE}"))
-         distanceType = L1_DISTANCE_STRING
+         distanceType = Embeddings::L1_DISTANCE_STRING
       elsif (embeddingDir.include?("distance:#{L2_DISTANCE}"))
-         distanceType = L2_DISTANCE_STRING
+         distanceType = Embeddings::L2_DISTANCE_STRING
       end
    end
 
-   energyMethod = getEnergyMethod(embeddingMethod, distanceType, embeddingDir)
+   energyMethod = Embeddings.getEnergyMethod(embeddingMethod, distanceType, embeddingDir)
 
    return datasetDir, embeddingDir, outDir, energyMethod
-end
-
-# Given an embedding method and distance type, return a proc that will compute the energy.
-def getEnergyMethod(embeddingMethod, distanceType, embeddingDir)
-   if (![L1_DISTANCE_STRING, L2_DISTANCE_STRING].include?(distanceType))
-      raise("Unknown distance type: #{distanceType}")
-   end
-
-   case embeddingMethod
-   when EMBEDDING_METHOD_TRANSE
-      return proc{|head, tail, relation, headId, tailId, relationId|
-         TransE.tripleEnergy(distanceType, head, tail, relation)
-      }
-   when EMBEDDING_METHOD_TRANSH
-      transHWeights = loadWeights(embeddingDir)
-      return proc{|head, tail, relation, headId, tailId, relationId|
-         TransH.tripleEnergy(head, tail, relation, transHWeights[relationId])
-      }
-   else
-      $stderr.puts("Unknown embedding method: #{embeddingMethod}")
-      exit(4)
-   end
 end
 
 def prepForPSL(args)
