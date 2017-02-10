@@ -8,7 +8,14 @@ module Energies
    NUM_THREADS = Etc.nprocessors - 1
    MIN_WORK_PER_THREAD = 100
 
-   def Energies.computeEnergies(triples, entityMapping, relationMapping, entityEmbeddings, relationEmbeddings, energyMethod, skipBadEnergies = false)
+   # If |useShortIdentifier| is true, then only the head and tail will be used as the energy key.
+   # It is common to batch all triples of the same relation together, so it is not always necessary
+   # in the caller.
+   def Energies.computeEnergies(
+         triples,
+         entityMapping, relationMapping,
+         entityEmbeddings, relationEmbeddings, energyMethod,
+         skipBadEnergies = false, useShortIdentifier = false)
       energies = {}
 
       pool = Thread.pool(NUM_THREADS)
@@ -17,7 +24,11 @@ module Energies
       triples.each_slice([triples.size() / NUM_THREADS + 1, MIN_WORK_PER_THREAD].max()){|threadTriples|
          pool.process{
             threadTriples.each{|triple|
-               id = triple.join(':')
+               if (useShortIdentifier)
+                  id = triple[0...2].join(':')
+               else
+                  id = triple.join(':')
+               end
 
                skip = false
                lock.synchronize {

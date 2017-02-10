@@ -19,6 +19,18 @@ L2_DISTANCE = 1
 HEAD = 0
 TAIL = 1
 
+# Note that if |a| and |b| are ints, we must get an int back:
+#   1/2 * even * odd + int  (wlog)
+# = 1/2 * even + int
+# = int + int
+def cantorPairing(a, b, int = true)
+   if (int)
+      return (0.5 * (a + b) * (a + b + 1)).to_i() + b
+   else
+      return 0.5 * (a + b) * (a + b + 1) + b
+   end
+end
+
 def entityHistogram(entities, bucketSize = 10)
    puts "Total Ocurrences: #{entities.size()}"
 
@@ -146,11 +158,16 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
    # We do not want to recompute any triples, and at the same time we
    # want to keep our set of seen triples small so that we don't run
    # out of memory.
+   # To reduce memory consumption with |seenTriples|, we will use a composite integer key
+   # instead of larger key.
+   # The numbers can actually get pretty big, but should still be better than strings.
+   # We will use Cantor pairing function: https://en.wikipedia.org/wiki/Pairing_function#Cantor_pairing_function
    seenTriples = Set.new()
    triples = []
 
    relations.each{|relation|
       seenTriples.clear()
+      GC.start()
 
       # cuttoffEnergies has a built-in list of (head, relation) and (tail, relation)
       # pairings. We just need to add the last component to generate corruptions.
@@ -170,7 +187,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                   tail = constantEntity
                end
 
-               id = "#{head}:#{tail}"
+               id = cantorPairing(head, tail)
                if (!seenTriples.include?(id))
                   triples << [head, tail, relation]
 
@@ -187,17 +204,18 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
             # Process the batch
             energies = Energies.computeEnergies(
                   triples, entityMapping, relationMapping,
-                  entityEmbeddings, relationEmbeddings, energyMethod, false)
+                  entityEmbeddings, relationEmbeddings, energyMethod,
+                  false, true)
 
             triples.clear()
             initialSize = energies.size()
 
             energies.delete_if{|idString, energy|
-               triple = idString.split(':').map{|part| part.to_i()}
+               head, tail = idString.split(':').map{|part| part.to_i()}
 
                # Check to see if we beat the cuttoff.
-               goodHead = energy <= cuttoffEnergies[HEAD][triple[0]][triple[2]]
-               goodTail = energy <= cuttoffEnergies[TAIL][triple[1]][triple[2]]
+               goodHead = energy <= cuttoffEnergies[HEAD][head][relation]
+               goodTail = energy <= cuttoffEnergies[TAIL][tail][relation]
 
                !goodHead && !goodTail
             }
@@ -208,7 +226,8 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
             # [[index, [head, tail, relation], energy], ...]
             # No need to convert the keys to ints now, since we will just write them out.
             energies = energies.to_a().each_with_index().map{|mapEntry, index|
-               [index + energiesWritten, mapEntry[0].split(':'), mapEntry[1]]
+               head, tail = mapEntry[0].split(':')
+               [index + energiesWritten, [head, tail, relation], mapEntry[1]]
             }
             energiesWritten += energies.size()
 
