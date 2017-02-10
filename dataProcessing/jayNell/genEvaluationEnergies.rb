@@ -19,10 +19,12 @@ L2_DISTANCE = 1
 HEAD = 0
 TAIL = 1
 
+# Uniquely combine |a| and |b|.
 # Note that if |a| and |b| are ints, we must get an int back:
 #   1/2 * even * odd + int  (wlog)
 # = 1/2 * even + int
 # = int + int
+# https://en.wikipedia.org/wiki/Pairing_function#Cantor_pairing_function
 def cantorPairing(a, b, int = true)
    if (int)
       return (0.5 * (a + b) * (a + b + 1)).to_i() + b
@@ -82,7 +84,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
          baseTriples << line.split("\t").map{|part| part.strip().to_i()}
       }
    }
-   
+
    # Get all the uinque entities and relations.
    allTriples = Energies.getTriples(sourceDir)
 
@@ -94,9 +96,10 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
    entityHistogram(entities)
 
    entities.uniq!()
+   entities.sort!
 
    # Keep track of what we see in the baseTriples (test set) and not just the entire corpus.
-   relations = baseTriples.map{|triple| triple[2]}.uniq()
+   relations = baseTriples.map{|triple| triple[2]}.uniq().sort()
 
    entityMapping, relationMapping = Energies.loadMappings(datasetDir)
    entityEmbeddings, relationEmbeddings = Embeddings.loadEmbeddings(embeddingDir)
@@ -158,27 +161,39 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
    # We do not want to recompute any triples, and at the same time we
    # want to keep our set of seen triples small so that we don't run
    # out of memory.
-   # To reduce memory consumption with |seenTriples|, we will use a composite integer key
-   # instead of larger key.
-   # The numbers can actually get pretty big, but should still be better than strings.
-   # We will use Cantor pairing function: https://en.wikipedia.org/wiki/Pairing_function#Cantor_pairing_function
-   seenTriples = Set.new()
+
+   # To prevent recomputation, we will leep track of the "constant entities"
+   # (the entitiy that is held constant while the other one is iterated)
+   # that we have seen for each relation.
+   # If we are holding the TAIL constant and we see an entity that we have
+   # held constant in the HEAD, then skip it.
+   # Note that if the set of corruptions was complete, then we could just do some math.
+   seenConstantEntitys = Set.new()
    triples = []
 
    relations.each{|relation|
-      seenTriples.clear()
-      GC.start()
+      seenConstantEntitys.clear()
 
       # cuttoffEnergies has a built-in list of (head, relation) and (tail, relation)
       # pairings. We just need to add the last component to generate corruptions.
       # constantEntityType will be HEAD or TAIL
-      cuttoffEnergies.each_key{|constantEntityType|
+      # We will need to make sure to do HEAD first.
+      cuttoffEnergies.keys().sort().each{|constantEntityType|
          cuttoffEnergies[constantEntityType].each_key{|constantEntity|
             if (!cuttoffEnergies[constantEntityType][constantEntity].has_key?(relation))
                next
             end
 
+            if (constantEntityType == HEAD)
+               seenConstantEntitys << constantEntity
+            end
+
             entities.each{|entity|
+               # Avoid duplicates.
+               if (constantEntityType == TAIL && seenConstantEntitys.include?(entity))
+                  next
+               end
+
                if (constantEntityType == HEAD)
                   head = constantEntity
                   tail = entity
@@ -187,14 +202,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                   tail = constantEntity
                end
 
-               id = cantorPairing(head, tail)
-               if (!seenTriples.include?(id))
-                  triples << [head, tail, relation]
-
-                  # We only need to keep track of the head and tail since we are clearing
-                  # every relation.
-                  seenTriples << id
-               end
+               triples << [head, tail, relation]
             }
 
             puts "Batch Size: #{triples.size()}"
@@ -235,7 +243,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                targetsOutFile.puts(energies.map{|energy| "#{energy[0]}\t#{energy[1].join("\t")}"}.join("\n"))
                energyOutFile.puts(energies.map{|energy| "#{energy[0]}\t#{energy[2]}"}.join("\n"))
             end
-            
+
             energies.clear()
             GC.start()
          }

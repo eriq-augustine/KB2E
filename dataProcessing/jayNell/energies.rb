@@ -1,6 +1,8 @@
 require_relative 'base'
 require_relative '../embeddings'
 
+require 'etc'
+
 # gem install thread
 require 'thread/pool'
 
