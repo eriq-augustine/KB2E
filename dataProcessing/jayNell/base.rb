@@ -26,6 +26,22 @@ module Base
       'wlTargets.Rel.out'
    ]
 
+   REPLACEMENT_TRIPLE_FILENAMES = [
+      'label-train-uniq-raw-rel.db.TRAIN',
+      'NELL.08m.165.cesv.csv.CandRel_CBL.out',
+      'NELL.08m.165.cesv.csv.CandRel_CPL.out',
+      'NELL.08m.165.cesv.csv.CandRel_General.out',
+      'NELL.08m.165.cesv.csv.CandRel.out',
+      'NELL.08m.165.cesv.csv.CandRel_SEAL.out',
+      'NELL.08m.165.cesv.csv.PattRel.out',
+      'NELL.08m.165.esv.csv.PromRel_General.out'
+   ]
+
+   # Gold truth that we will use for embedding evaluation.
+   TEST_TRIPLE_FILENAMES = [
+      'label-test-uniq-raw-rel.db.TRAIN'
+   ]
+
    CATEGORY_FILES = [
       'label-train-uniq-raw-cat.db.TRAIN',
       'NELL.08m.165.cesv.csv.CandCat_CBL.out',
@@ -65,6 +81,25 @@ module Base
       }
 
       return triples, rejectedCount
+   end
+
+   def Base.readCategories(path, minConfidence = 0.0)
+      cats = []
+      rejectedCount = 0
+
+      File.open(path, 'r'){|file|
+         file.each{|line|
+            parts = line.split("\t").map{|part| part.strip()}
+            if (parts[2].to_f() < minConfidence)
+               rejectedCount += 1
+               next
+            end
+
+            cats << parts[0...2].map{|part| part.to_i()}
+         }
+      }
+
+      return cats, rejectedCount
    end
 
    def Base.writeEntities(path, triples)
