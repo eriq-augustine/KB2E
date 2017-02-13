@@ -73,11 +73,6 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
    evaltargetsPath = File.join(embeddingDir, EVAL_TARGETS_FILENAME)
    evalEnergiesPath = File.join(embeddingDir, EVAL_ENERGIES_FILENAME)
 
-   # TEST
-   # if (File.exists?(evaltargetsPath) && File.exists?(evalEnergiesPath))
-   #    return
-   # end
-
    baseTriples = []
    File.open(File.join(datasetDir, Base::TEST_FILENAME), 'r'){|file|
       file.each{|line|
@@ -110,7 +105,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
    # This mean that any corrupted triple with energy greater than the target (baseTriple)
    # should not be written down.
    # However, there can be overlap in the corruptions that each target generates
-   # ie. [Foo, Bar, Baz] and [Foo, Choo, Baz] will generate the same corruptions.
+   # ie. [Foo, Bar, Baz] and [Foo, Choo, Baz] will generate some of the same corruptions.
    # So, we will calculate the energy for the targets up-front and keep track of the highest energy for
    # each (head, relation) and (tail, relation) pair.
 
@@ -119,36 +114,43 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
          entityEmbeddings, relationEmbeddings, energyMethod, false)
 
    # {HEAD => {head => {relation => cuttoffEnergy}, ...}, (same for TAIL)}.
+   # Note that because of the later queries on this structure, we cannot use the auto-creation syntax.
    cuttoffEnergies = {
-      HEAD => Hash.new{|entityHash, entityKey|
-         entityHash[entityKey] = Hash.new{|relationHash, relationKey|
-            relationHash[relationKey] = -1
-         }
-      },
-      TAIL => Hash.new{|entityHash, entityKey|
-         entityHash[entityKey] = Hash.new{|relationHash, relationKey|
-            relationHash[relationKey] = -1
-         }
-      }
+      HEAD => {},
+      TAIL => {}
    }
 
    baseEnergies.each_pair{|idString, energy|
       triple = idString.split(':').map{|part| part.to_i()}
 
-      if (energy > cuttoffEnergies[HEAD][triple[0]][triple[2]])
+      # Insert missing keys.
+      if (!cuttoffEnergies[HEAD].has_key?(triple[0]))
+         cuttoffEnergies[HEAD][triple[0]] = {}
+      end
+
+      if (!cuttoffEnergies[TAIL].has_key?(triple[1]))
+         cuttoffEnergies[TAIL][triple[1]] = {}
+      end
+
+      # Check to see if we have a higher skyline.
+      if (!cuttoffEnergies[HEAD][triple[0]].has_key?(triple[2]) || energy > cuttoffEnergies[HEAD][triple[0]][triple[2]])
          cuttoffEnergies[HEAD][triple[0]][triple[2]] = energy
       end
 
-      if (energy > cuttoffEnergies[TAIL][triple[1]][triple[2]])
+      if (!cuttoffEnergies[TAIL][triple[1]].has_key?(triple[2]) || energy > cuttoffEnergies[TAIL][triple[1]][triple[2]])
          cuttoffEnergies[TAIL][triple[1]][triple[2]] = energy
       end
    }
 
    targetsOutFile = File.open(evaltargetsPath, 'w')
    energyOutFile = File.open(evalEnergiesPath, 'w')
+
    # The count of all energies we have actually written out.
    # We need this to keep a consistent surrogate key.
    energiesWritten = 0
+
+   # All the triples we have considered.
+   totalTriples = 0
 
    # All the energies we have computed.
    totalEnergies = 0
@@ -172,6 +174,8 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
    triples = []
 
    relations.each{|relation|
+      puts "Relation: #{relation}"
+
       seenConstantEntitys.clear()
 
       # cuttoffEnergies has a built-in list of (head, relation) and (tail, relation)
@@ -180,6 +184,8 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
       # We will need to make sure to do HEAD first.
       cuttoffEnergies.keys().sort().each{|constantEntityType|
          cuttoffEnergies[constantEntityType].each_key{|constantEntity|
+            batchStartTime = (Time.now().to_f() * 1000.0).to_i()
+
             if (!cuttoffEnergies[constantEntityType][constantEntity].has_key?(relation))
                next
             end
@@ -188,6 +194,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                seenConstantEntitys << constantEntity
             end
 
+            # Gather all the triples in this batch.
             entities.each{|entity|
                # Avoid duplicates.
                if (constantEntityType == TAIL && seenConstantEntitys.include?(entity))
@@ -205,9 +212,7 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                triples << [head, tail, relation]
             }
 
-            puts "Batch Size: #{triples.size()}"
-
-            totalEnergies += triples.size()
+            totalTriples += triples.size()
 
             # Process the batch
             energies = Energies.computeEnergies(
@@ -215,15 +220,15 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                   entityEmbeddings, relationEmbeddings, energyMethod,
                   false, true)
 
-            triples.clear()
             initialSize = energies.size()
+            totalEnergies += energies.size()
 
             energies.delete_if{|idString, energy|
                head, tail = idString.split(':').map{|part| part.to_i()}
 
                # Check to see if we beat the cuttoff.
-               goodHead = energy <= cuttoffEnergies[HEAD][head][relation]
-               goodTail = energy <= cuttoffEnergies[TAIL][tail][relation]
+               goodHead = (cuttoffEnergies[HEAD].has_key?(head) && cuttoffEnergies[HEAD][head].has_key?(relation)) && (energy <= cuttoffEnergies[HEAD][head][relation])
+               goodTail = (cuttoffEnergies[TAIL].has_key?(tail) && cuttoffEnergies[TAIL][tail].has_key?(relation)) && (energy <= cuttoffEnergies[TAIL][tail][relation])
 
                !goodHead && !goodTail
             }
@@ -244,12 +249,16 @@ def writeEvalData(sourceDir, datasetDir, embeddingDir, embeddingMethod, distance
                energyOutFile.puts(energies.map{|energy| "#{energy[0]}\t#{energy[2]}"}.join("\n"))
             end
 
+            batchEndTime = (Time.now().to_f() * 1000.0).to_i()
+            puts "Batch Size: #{triples.size()} (#{energies.size()}) -- [#{batchEndTime - batchStartTime} ms]"
+
             energies.clear()
-            GC.start()
+            triples.clear()
          }
       }
    }
 
+   puts "Triples Considered: #{totalTriples}"
    puts "Energies Considered: #{totalEnergies}"
    puts "Energies Written: #{energiesWritten}"
    puts "Energies Dropped: #{droppedEnergies}"

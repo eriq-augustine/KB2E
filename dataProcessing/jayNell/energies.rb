@@ -72,7 +72,6 @@ module Energies
       }
 
       pool.wait(:done)
-
       pool.shutdown()
 
       # Remove rejected energies.
