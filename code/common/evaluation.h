@@ -7,6 +7,9 @@
 #include "common/args.h"
 #include "common/utils.h"
 
+// If we have more entities than this, the cache will be too big and we will just not use it.
+#define MAX_CACHE_ENTITIES 40000
+
 namespace common {
 
 class EmbeddingEvaluation {

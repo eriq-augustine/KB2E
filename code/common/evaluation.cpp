@@ -28,6 +28,8 @@ EmbeddingEvaluation::EmbeddingEvaluation(EmbeddingArguments args) {
 
    relationEmbeddingPath_ = outputDir_ + "/" + RELATION_EMBEDDING_FILE_BASENAME + "." + METHOD_TO_STRING(method_);
    entityEmbeddingPath_ = outputDir_ + "/" + ENTITY_EMBEDDING_FILE_BASENAME + "." + METHOD_TO_STRING(method_);
+
+   energyCache_ = NULL;
 }
 
 EmbeddingEvaluation::~EmbeddingEvaluation() {
@@ -103,15 +105,18 @@ void EmbeddingEvaluation::loadEmbeddings() {
 }
 
 double EmbeddingEvaluation::cachedTripleEnergy(int head, int tail, int relation) {
-   int cacheIndex = (head * numEntities_) + tail;
-   if (energyCache_[cacheIndex] >= 0) {
-      return energyCache_[cacheIndex];
+   if (energyCache_ != NULL) {
+      int cacheIndex = (head * numEntities_) + tail;
+      if (energyCache_[cacheIndex] >= 0) {
+         return energyCache_[cacheIndex];
+      }
+
+      double energy = tripleEnergy(head, tail, relation);
+      energyCache_[cacheIndex] = energy;
+      return energy;
    }
 
-   double energy = tripleEnergy(head, tail, relation);
-
-   energyCache_[cacheIndex] = energy;
-   return energy;
+   return tripleEnergy(head, tail, relation);
 }
 
 // If |corruptHead| is true, corrupt the head. Otherwise, corrupt the tail.
@@ -188,7 +193,9 @@ void EmbeddingEvaluation::run() {
 
    // Prep the cache.
    int cacheSize = numEntities_ * numEntities_;
-   energyCache_ = (double*)calloc(cacheSize, sizeof(double));
+   if (numEntities_ <= MAX_CACHE_ENTITIES) {
+      energyCache_ = (double*)calloc(cacheSize, sizeof(double));
+   }
 
    // Allocate the vector that will be cached to avoid reallocation.
    // The energies of all permutation of this triple.
@@ -204,8 +211,10 @@ void EmbeddingEvaluation::run() {
    // This drops FB15k down to about 200 million.
    // We will take a small hit on this inefficient looping structure, but we can optimize later.
    for (int relationId = 0; relationId < numRelations_; relationId++) {
-      for (int i = 0; i < cacheSize; i++) {
-         energyCache_[i] = -1;
+      if (energyCache_ != NULL) {
+         for (int i = 0; i < cacheSize; i++) {
+            energyCache_[i] = -1;
+         }
       }
 
       // For each triple in our working set.
