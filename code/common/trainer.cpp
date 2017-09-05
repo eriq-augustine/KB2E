@@ -139,6 +139,10 @@ double Trainer::train_kb(int aHead, int aTail, int aRelation, int bHead, int bTa
       loss = margin_ + normalEnergy - corruptedEnergy;
       gradientUpdate(aHead, aTail, aRelation, false);
       gradientUpdate(bHead, bTail, bRelation, true);
+
+      // Uncomment this to get information on the positive and negative examples trained on.
+      // printf("%d\t%d\t%d\t1\n", aHead, aTail, aRelation);
+      // printf("%d\t%d\t%d\t0\n", bHead, bTail, bRelation);
    }
 
    return loss;
