@@ -3,6 +3,8 @@ There are some technical issues that needed to be addressed as well as some auto
 
 Note that for our data, we assume that ids start at 0 and have no holes.
 
+TransE, TransH, and TransR have been fixed up.
+
 ___
 
 New: Add PTransE (EMNLP 2015) code!
